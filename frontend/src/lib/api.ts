@@ -71,7 +71,8 @@ export const api = {
   updateErrandStatus: (id: string, status: 'completed' | 'cancelled') => apiClient.put(`/errand-requests/${id}/status`, { status }),
   
   // System
-  toggleEmergency: (active: boolean) => apiClient.post('/emergency', { active }),
+  toggleEmergency: (active: boolean, message: string = "", buildingId: number = -1) => 
+    apiClient.post('/emergency', { active, message, building_id: buildingId }),
 
   // Health
   checkHealth: () => apiClient.get('/../health'), // Go up one level from /api/v1
