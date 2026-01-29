@@ -11,7 +11,7 @@ import { api, MatchResponse, ErrandResponse } from '../lib/api';
 import { wsService } from '../lib/ws';
 import { HyperspaceOverlay } from './Hyperspace';
 
-// --- Sub-Components (Defined Outside to prevent re-renders/scope issues) ---
+// --- Components ---
 
 const HelpOverlay = ({ onClose }: { onClose: () => void }) => (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
@@ -36,10 +36,10 @@ const EmergencyBanner = ({ message }: { message: string }) => (
     </div>
 );
 
-const Beacon = ({ position, onClick }: { position: [number, number, number], onClick: () => void }) => (
+const Beacon = ({ position, category, onClick }: { position: [number, number, number], category?: string, onClick: () => void }) => (
     <group position={position} onClick={(e) => { e.stopPropagation(); onClick(); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
-        <mesh position={[0, 10, 0]}><cylinderGeometry args={[0.2, 0.2, 20, 8]} /><meshBasicMaterial color="#ffaa00" transparent opacity={0.3} /></mesh>
-        <mesh position={[0, 1, 0]}><sphereGeometry args={[0.8, 16, 16]} /><meshBasicMaterial color="#ffaa00" /></mesh>
+        <mesh position={[0, 10, 0]}><cylinderGeometry args={[0.2, 0.2, 20, 8]} /><meshBasicMaterial color={category === 'borrow' ? '#ff00ff' : category === 'favor' ? '#00ff00' : '#ffaa00'} transparent opacity={0.3} /></mesh>
+        <mesh position={[0, 1, 0]}><sphereGeometry args={[0.8, 16, 16]} /><meshBasicMaterial color={category === 'borrow' ? '#ff00ff' : category === 'favor' ? '#00ff00' : '#ffaa00'} /></mesh>
     </group>
 );
 
@@ -82,7 +82,7 @@ const InfoPanel = ({ building, onClose, onReportEmergency }: any) => (
       <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}><X size={20} /></button>
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#aaa' }}><MapPin size={16} color="#00ffff" /><span>Sector {building.id} - Grid Alpha</span></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#aaa' }}><MapPin size={16} color="#00ffff" /><span>Sector {building.id}</span></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#aaa' }}><Info size={16} color="#00ffff" /><span>Type: {building.type}</span></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem', color: '#aaa' }}><Activity size={16} color="#00ff00" /><span>Status: Active</span></div>
     </div>
@@ -104,7 +104,7 @@ const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel }: any) =
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {errands.map((e: any) => (
                         <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div><div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{e.title}</div><div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} reward</div></div>
+                            <div><div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{e.title}</div><div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div></div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>
                                 <button onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>
@@ -171,6 +171,7 @@ const CampusHologram = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [travelMode, setTravelMode] = useState(false);
   const [errandMode, setErrandMode] = useState(false);
+  const [errandCategory, setErrandCategory] = useState("delivery");
   const [startBuilding, setStartBuilding] = useState<any>(null);
   const [endBuilding, setEndBuilding] = useState<any>(null);
   const [pickupBuilding, setPickupBuilding] = useState<any>(null);
@@ -178,6 +179,7 @@ const CampusHologram = () => {
   const [activeRoute, setActiveRoute] = useState<any>(null);
   const [matches, setMatches] = useState<MatchResponse[] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [buildingLayout, setBuildingLayout] = useState(0);
 
   const fetchErrands = async () => {
       setIsLoading(true);
@@ -219,11 +221,14 @@ const CampusHologram = () => {
     const b = [];
     const types = ["Lab", "Dorm", "Hall", "Cafe", "Admin"];
     for (let i = 0; i < 20; i++) {
-      const h = Math.random() * 5 + 2;
-      b.push({ id: i, position: [(Math.random() - 0.5) * 40, h / 2, (Math.random() - 0.5) * 40], args: [2, h, 2], name: `Building ${String.fromCharCode(65+(i%26))}-${100+i}`, type: types[i%5] });
+      const h = Math.random() * 5 + 2; 
+      const seed = i + buildingLayout;
+      const x = Math.sin(seed * 12345.678) * 20;
+      const z = Math.cos(seed * 98765.432) * 20;
+      b.push({ id: i, position: [x, h / 2, z], args: [2, h, 2], name: `Node ${String.fromCharCode(65+(i%26))}-${100+i}`, type: types[i%5] });
     }
     return b;
-  }, []);
+  }, [buildingLayout]);
 
   const handleBuildingClick = (id: number) => {
       const b = buildings.find(x => x.id === id);
@@ -248,7 +253,15 @@ const CampusHologram = () => {
           if (plan.data) {
               setIsHyperSpace(true);
               const m = await api.getMatches(plan.data.id);
-              setTimeout(() => { setMatches(m.data); setActiveRoute({start: startBuilding.position, end: endBuilding.position}); setTravelMode(false); setIsHyperSpace(false); setIsSubmitting(false); }, 2000);
+              setTimeout(() => { 
+                  setMatches(m.data); 
+                  setActiveRoute({start: startBuilding.position, end: endBuilding.position}); 
+                  setTravelMode(false); 
+                  setStartBuilding(null);
+                  setEndBuilding(null);
+                  setIsHyperSpace(false); 
+                  setIsSubmitting(false); 
+              }, 2000);
           }
       } catch (e) { alert("Failed"); setIsSubmitting(false); }
   };
@@ -257,8 +270,12 @@ const CampusHologram = () => {
       if (!pickupBuilding || !dropoffBuilding || !user) return;
       setIsSubmitting(true);
       try {
-          await api.createErrand({ user_id: user.uid, title: "Delivery", description: "Standard Package", pickup_geom: `POINT(${pickupBuilding.position[0]} ${pickupBuilding.position[2]})`, dropoff_geom: `POINT(${dropoffBuilding.position[0]} ${dropoffBuilding.position[2]})`, reward_estimate: 5.0 });
-          alert("Request Broadcasted!"); setErrandMode(false); fetchErrands();
+          await api.createErrand({ user_id: user.uid, title: errandCategory.toUpperCase(), category: errandCategory, description: `Request: ${errandCategory}`, pickup_geom: `POINT(${pickupBuilding.position[0]} ${pickupBuilding.position[2]})`, dropoff_geom: `POINT(${dropoffBuilding.position[0]} ${dropoffBuilding.position[2]})`, reward_estimate: 5.0 });
+          alert("Request Broadcasted!"); 
+          setErrandMode(false); 
+          setPickupBuilding(null); 
+          setDropoffBuilding(null); 
+          fetchErrands();
       } catch (e) { alert("Error"); } finally { setIsSubmitting(false); }
   };
 
@@ -277,12 +294,13 @@ const CampusHologram = () => {
             <h1 style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '4px', textTransform: 'uppercase' }}>CampusLoop</h1>
         </div>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <button onClick={() => setBuildingLayout(prev => prev + 1)} style={{ background: 'rgba(0, 255, 255, 0.1)', border: '1px solid #00ffff', color: '#00ffff', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 'bold' }}>Reconfigure</button>
             <button onClick={() => setShowHelp(true)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}><HelpCircle size={20}/></button>
             <button onClick={() => setShowSidebar(!showSidebar)} style={{ background: showSidebar ? 'rgba(0,255,255,0.2)' : 'rgba(0,255,255,0.05)', border: '1px solid #00ffff', color: '#00ffff', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}><LayoutDashboard size={20}/></button>
-            <button onClick={() => { setTravelMode(!travelMode); setErrandMode(false); setMatches(null); setActiveRoute(null); }} style={{ background: travelMode ? 'rgba(0,255,0,0.2)' : 'rgba(0,255,255,0.1)', border: travelMode ? '1px solid #00ff00' : '1px solid #00ffff', color: travelMode ? '#00ff00' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{travelMode ? 'PLANNING...' : 'PLAN ROUTE'}</button>
-            <button onClick={() => { setErrandMode(!errandMode); setTravelMode(false); setMatches(null); setActiveRoute(null); }} style={{ background: errandMode ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,255,0.1)', border: errandMode ? '1px solid #FFA500' : '1px solid #00ffff', color: errandMode ? '#FFA500' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{errandMode ? 'REQUESTING...' : 'REQUEST FAVOR'}</button>
-            <button onClick={() => api.toggleEmergency(!isEmergency, isEmergency ? "" : "GLOBAL EVACUATION DRILL", -1)} style={{ background: isEmergency ? 'rgba(255,0,0,0.2)' : 'rgba(0,255,255,0.1)', border: isEmergency ? '1px solid #ff0000' : '1px solid #00ffff', color: isEmergency ? '#ff0000' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{isEmergency ? 'OFF' : 'SOS'}</button>
-            {activeRoute && <button onClick={() => setActiveRoute(null)} style={{ background: 'rgba(255,0,0,0.2)', border: '1px solid #ff0000', color: '#ff0000', padding: '8px 16px', cursor: 'pointer', fontWeight: 'bold' }}>CLEAR PATH</button>}
+            <button onClick={() => { const m = !travelMode; setTravelMode(m); setErrandMode(false); setMatches(null); setActiveRoute(null); if(!m) {setStartBuilding(null); setEndBuilding(null);} }} style={{ background: travelMode ? 'rgba(0,255,0,0.2)' : 'rgba(0,255,255,0.1)', border: travelMode ? '1px solid #00ff00' : '1px solid #00ffff', color: travelMode ? '#00ff00' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{travelMode ? 'PLANNING...' : 'PLAN ROUTE'}</button>
+            <button onClick={() => { const m = !errandMode; setErrandMode(m); setTravelMode(false); setMatches(null); setActiveRoute(null); if(!m) {setPickupBuilding(null); setDropoffBuilding(null);} }} style={{ background: errandMode ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,255,0.1)', border: errandMode ? '1px solid #FFA500' : '1px solid #00ffff', color: errandMode ? '#FFA500' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{errandMode ? 'REQUESTING...' : 'REQUEST FAVOR'}</button>
+            <button onClick={() => api.toggleEmergency(!isEmergency, "EVACUATION DRILL", -1)} style={{ background: isEmergency ? 'rgba(255,0,0,0.2)' : 'rgba(0,255,255,0.1)', border: isEmergency ? '1px solid #ff0000' : '1px solid #00ffff', color: isEmergency ? '#ff0000' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{isEmergency ? 'OFF' : 'SOS'}</button>
+            {activeRoute && <button onClick={() => { setActiveRoute(null); setStartBuilding(null); setEndBuilding(null); }} style={{ background: 'rgba(255,0,0,0.2)', border: '1px solid #ff0000', color: '#ff0000', padding: '8px 16px', cursor: 'pointer', fontWeight: 'bold' }}>CLEAR PATH</button>}
             <button onClick={() => { signOut(auth); navigate('/'); }} style={{ background: 'transparent', border: '1px solid #f44', color: '#f44', padding: '8px 16px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>Exit</button>
         </div>
       </header>
@@ -298,13 +316,20 @@ const CampusHologram = () => {
       )}
 
       {errandMode && (
-          <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.8)', padding: '20px 40px', borderRadius: '12px', border: '1px solid #FFA500', backdropFilter: 'blur(10px)', zIndex: 20, display: 'flex', gap: '30px', alignItems: 'center' }}>
-              <span style={{ color: '#fa0', fontWeight: 'bold' }}>{pickupBuilding?.name || 'PICKUP'} ➔ {dropoffBuilding?.name || 'DROPOFF'}</span>
-              <button disabled={!pickupBuilding || !dropoffBuilding || isSubmitting} onClick={handleConfirmErrand} style={{ background: '#fa0', color: '#000', border: 'none', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>{isSubmitting ? '...' : 'POST'}</button>
+          <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.8)', padding: '20px 40px', borderRadius: '12px', border: '1px solid #FFA500', backdropFilter: 'blur(10px)', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  {['delivery', 'borrow', 'favor'].map(cat => (
+                      <button key={cat} onClick={() => setErrandCategory(cat)} style={{ padding: '5px 15px', background: errandCategory === cat ? '#fa0' : 'none', border: '1px solid #fa0', color: errandCategory === cat ? '#000' : '#fa0', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold' }}>{cat.toUpperCase()}</button>
+                  ))}
+              </div>
+              <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
+                  <span style={{ color: '#fa0', fontWeight: 'bold' }}>{pickupBuilding?.name || 'PICKUP'} ➔ {dropoffBuilding?.name || 'DROPOFF'}</span>
+                  <button disabled={!pickupBuilding || !dropoffBuilding || isSubmitting} onClick={handleConfirmErrand} style={{ background: '#fa0', color: '#000', border: 'none', padding: '12px 24px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>{isSubmitting ? '...' : 'POST'}</button>
+              </div>
           </div>
       )}
 
-      {matches && <MatchList matches={matches} onClose={() => setMatches(null)} />}
+      {matches && <MatchList matches={matches} onClose={() => { setMatches(null); setActiveRoute(null); }} />}
 
       <Canvas camera={{ position: [30, 30, 30], fov: 35 }}>
         <ambientLight intensity={0.2} /><pointLight position={[10, 10, 10]} intensity={1} color="#00ffff" />
@@ -312,7 +337,14 @@ const CampusHologram = () => {
         <group>
             {buildings.map(b => <Building key={b.id} data={b} isSelected={selectedId === b.id} isStart={startBuilding?.id === b.id || pickupBuilding?.id === b.id} isEnd={endBuilding?.id === b.id || dropoffBuilding?.id === b.id} isEmergency={isEmergency} emergencyBuildingId={emergencyBuildingId ?? undefined} onClick={handleBuildingClick} />)}
             {isEmergency && emergencyBuildingId !== null && buildings.find(b => b.id === emergencyBuildingId) && <SOSBeam position={buildings.find(b => b.id === emergencyBuildingId)!.position} />}
-            {pendingErrands.map(e => <Beacon key={e.id} position={[e.pickup_lng, 0, e.pickup_lat]} onClick={() => setShowSidebar(true)} />)}
+            {pendingErrands.map(e => (
+                <Beacon 
+                    key={e.id} 
+                    position={[e.pickup_lng, 0, e.pickup_lat]} 
+                    category={e.category}
+                    onClick={() => setShowSidebar(true)} 
+                />
+            ))}
             {activeRoute && <RouteVisualizer start={activeRoute.start} end={activeRoute.end} />}
         </group>
         <OrbitControls enableDamping dampingFactor={0.05} maxPolarAngle={Math.PI / 2 - 0.1} />

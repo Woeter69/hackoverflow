@@ -26,6 +26,7 @@ type CreateErrandRequestDTO struct {
 	UserID         string  `json:"user_id"`
 	Title          string  `json:"title"`
 	Description    string  `json:"description"`
+	Category       string  `json:"category"`
 	PickupGeom     string  `json:"pickup_geom"`  // WKT
 	DropoffGeom    string  `json:"dropoff_geom"` // WKT
 	RewardEstimate float64 `json:"reward_estimate"`
@@ -80,13 +81,13 @@ func CreateErrandRequest(c *gin.Context) {
 	}
 
 	query := `
-		INSERT INTO errand_requests (user_id, title, description, pickup_geom, dropoff_geom, status, urgency_level, reward_estimate)
-		VALUES ($1, $2, $3, ST_GeomFromText($4, 4326)::geography, ST_GeomFromText($5, 4326)::geography, 'pending', 1, $6)
+		INSERT INTO errand_requests (user_id, title, description, category, pickup_geom, dropoff_geom, status, urgency_level, reward_estimate)
+		VALUES ($1, $2, $3, $4, ST_GeomFromText($5, 4326)::geography, ST_GeomFromText($6, 4326)::geography, 'pending', 1, $7)
 		RETURNING id
 	`
 
 	var newID string
-	err := database.DB.QueryRow(query, req.UserID, req.Title, req.Description, req.PickupGeom, req.DropoffGeom, req.RewardEstimate).Scan(&newID)
+	err := database.DB.QueryRow(query, req.UserID, req.Title, req.Description, req.Category, req.PickupGeom, req.DropoffGeom, req.RewardEstimate).Scan(&newID)
 	if err != nil {
 		log.Printf("CreateErrandRequest DB Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB Insert Failed: " + err.Error()})
@@ -99,7 +100,7 @@ func CreateErrandRequest(c *gin.Context) {
 		var e ErrandResponseDTO
 		q := `
 			SELECT 
-				id, title, description, reward_estimate,
+				id, title, description, category, reward_estimate,
 				ST_Y(pickup_geom::geometry) as pickup_lat,
 				ST_X(pickup_geom::geometry) as pickup_lng,
 				ST_Y(dropoff_geom::geometry) as dropoff_lat,
@@ -107,7 +108,7 @@ func CreateErrandRequest(c *gin.Context) {
 			FROM errand_requests
 			WHERE id = $1
 		`
-		if err := database.DB.QueryRow(q, newID).Scan(&e.ID, &e.Title, &e.Description, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err == nil {
+		if err := database.DB.QueryRow(q, newID).Scan(&e.ID, &e.Title, &e.Description, &e.Category, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err == nil {
 			wsHub.BroadcastJSON("NEW_ERRAND", e)
 		}
 	}
@@ -119,6 +120,7 @@ type ErrandResponseDTO struct {
 	ID             string  `json:"id"`
 	Title          string  `json:"title"`
 	Description    string  `json:"description"`
+	Category       string  `json:"category"`
 	RewardEstimate float64 `json:"reward_estimate"`
 	PickupLat      float64 `json:"pickup_lat"`
 	PickupLng      float64 `json:"pickup_lng"`
@@ -129,7 +131,7 @@ type ErrandResponseDTO struct {
 func GetPendingErrands(c *gin.Context) {
 	query := `
 		SELECT 
-			id, title, description, reward_estimate::FLOAT,
+			id, title, description, category, reward_estimate::FLOAT,
 			ST_Y(pickup_geom::geometry) as pickup_lat,
 			ST_X(pickup_geom::geometry) as pickup_lng,
 			ST_Y(dropoff_geom::geometry) as dropoff_lat,
@@ -151,7 +153,7 @@ func GetPendingErrands(c *gin.Context) {
 	errands := []ErrandResponseDTO{}
 	for rows.Next() {
 		var e ErrandResponseDTO
-		if err := rows.Scan(&e.ID, &e.Title, &e.Description, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err != nil {
+		if err := rows.Scan(&e.ID, &e.Title, &e.Description, &e.Category, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err != nil {
 			log.Printf("Scan Error: %v\n", err)
 			continue
 		}

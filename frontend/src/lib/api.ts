@@ -33,26 +33,19 @@ export interface ErrandRequest {
   user_id: string;
   title: string;
   description: string;
+  category: string;
   pickup_geom: string; // WKT Point
   dropoff_geom: string; // WKT Point
   reward_estimate: number;
 }
 
-export interface MatchResponse {
-  errand: {
-    id: string;
-    title: string;
-    description: string;
-    reward_estimate: number;
-    // Add other fields as needed based on backend response
-  };
-  distance_from_route: number;
-}
+// ... existing code ...
 
 export interface ErrandResponse {
   id: string;
   title: string;
   description: string;
+  category: string;
   reward_estimate: number;
   pickup_lat: number;
   pickup_lng: number;
