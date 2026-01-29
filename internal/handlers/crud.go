@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -64,7 +64,7 @@ func CreateTravelPlan(c *gin.Context) {
 	var newID string
 	err := database.DB.QueryRow(fullQuery, req.UserID, originName, destName, req.RouteGeom, mode, startTime).Scan(&newID)
 	if err != nil {
-		fmt.Printf("CreateTravelPlan DB Error: %v\n", err)
+		log.Printf("CreateTravelPlan DB Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB Insert Failed: " + err.Error()})
 		return
 	}
@@ -88,7 +88,7 @@ func CreateErrandRequest(c *gin.Context) {
 	var newID string
 	err := database.DB.QueryRow(query, req.UserID, req.Title, req.Description, req.PickupGeom, req.DropoffGeom, req.RewardEstimate).Scan(&newID)
 	if err != nil {
-		fmt.Printf("CreateErrandRequest DB Error: %v\n", err)
+		log.Printf("CreateErrandRequest DB Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB Insert Failed: " + err.Error()})
 		return
 	}
@@ -142,7 +142,7 @@ func GetPendingErrands(c *gin.Context) {
 
 	rows, err := database.DB.Query(query)
 	if err != nil {
-		fmt.Printf("GetPendingErrands DB Error: %v\n", err)
+		log.Printf("GetPendingErrands DB Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Query failed: " + err.Error()})
 		return
 	}
@@ -152,7 +152,7 @@ func GetPendingErrands(c *gin.Context) {
 	for rows.Next() {
 		var e ErrandResponseDTO
 		if err := rows.Scan(&e.ID, &e.Title, &e.Description, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err != nil {
-			fmt.Printf("Scan Error: %v\n", err)
+			log.Printf("Scan Error: %v\n", err)
 			continue
 		}
 		errands = append(errands, e)
@@ -176,7 +176,7 @@ func UpdateErrandStatus(c *gin.Context) {
 	// Update status in DB
 	_, err := database.DB.Exec("UPDATE errand_requests SET status = $1 WHERE id = $2", req.Status, id)
 	if err != nil {
-		fmt.Printf("UpdateErrandStatus DB Error: %v\n", err)
+		log.Printf("UpdateErrandStatus DB Error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update status"})
 		return
 	}
@@ -193,7 +193,9 @@ func UpdateErrandStatus(c *gin.Context) {
 }
 
 type EmergencyToggleRequest struct {
-	Active bool `json:"active"`
+	Active     bool   `json:"active"`
+	Message    string `json:"message"`
+	BuildingID int    `json:"building_id"`
 }
 
 func ToggleEmergency(c *gin.Context) {
@@ -203,9 +205,13 @@ func ToggleEmergency(c *gin.Context) {
 		return
 	}
 
-	// Broadcast global alert
+	// Broadcast global alert with details
 	if wsHub != nil {
-		wsHub.BroadcastJSON("EMERGENCY_STATE", gin.H{"active": req.Active})
+		wsHub.BroadcastJSON("EMERGENCY_STATE", gin.H{
+			"active":      req.Active,
+			"message":     req.Message,
+			"building_id": req.BuildingID,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "broadcasted", "active": req.Active})
