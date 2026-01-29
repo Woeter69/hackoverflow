@@ -1,0 +1,21 @@
+FROM golang:1.24-alpine
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache gcc musl-dev git
+
+# Pin Air for hot reloading
+RUN go install github.com/air-verse/air@v1.52.3
+
+ENV GOTOOLCHAIN=local
+# Ensure the Go compiler can find the binary it just built
+ENV PATH="/app/tmp:${PATH}"
+
+# Copy everything since we already ran tidy locally
+COPY . .
+
+# Ensure tmp directory exists
+RUN mkdir -p tmp && chmod 777 tmp
+
+CMD ["air", "-c", ".air.toml"]

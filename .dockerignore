@@ -1,0 +1,8 @@
+bin/
+tmp/
+vendor/
+.git/
+.env
+Dockerfile
+docker-compose.yml
+# Removed .air.toml from ignore so it can be copied into the container
