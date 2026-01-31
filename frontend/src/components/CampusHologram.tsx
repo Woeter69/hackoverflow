@@ -295,7 +295,6 @@ const CampusHologram = () => {
   const [matches, setMatches] = useState<MatchResponse[] | null>(null);
   const [chatErrandId, setChatErrandId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [buildingLayout, setBuildingLayout] = useState(0);
   const [activeNotification, setActiveNotification] = useState<ErrandResponse | null>(null);
 
   const fetchProfile = async () => {
@@ -357,17 +356,37 @@ const CampusHologram = () => {
   }, [user]); // user dependency added to ensure check works
 
   const buildings = useMemo(() => {
-    const b: { id: number, position: [number, number, number], args: [number, number, number], name: string, type: string }[] = [];
-    const types = ["Lab", "Dorm", "Hall", "Cafe", "Admin"];
-    for (let i = 0; i < 20; i++) {
-      const h = Math.random() * 5 + 2; 
-      const seed = i + buildingLayout;
-      const x = Math.sin(seed * 12345.678) * 20;
-      const z = Math.cos(seed * 98765.432) * 20;
-      b.push({ id: i, position: [x, h / 2, z], args: [2, h, 2], name: `Node ${String.fromCharCode(65+(i%26))}-${100+i}`, type: types[i%5] });
-    }
-    return b;
-  }, [buildingLayout]);
+    return [
+      // Central Admin / Library Hub
+      { id: 1, position: [0, 4, 0], args: [8, 8, 8], name: "Central Library", type: "Admin" },
+      { id: 2, position: [-10, 3, 0], args: [5, 6, 5], name: "Student Center", type: "Admin" },
+      { id: 3, position: [10, 2.5, 0], args: [6, 5, 4], name: "Admin Block", type: "Admin" },
+      
+      // Academic Zone (North)
+      { id: 4, position: [0, 3.5, -15], args: [6, 7, 6], name: "Science Complex", type: "Lab" },
+      { id: 5, position: [-8, 2.5, -18], args: [4, 5, 4], name: "Chemistry Lab", type: "Lab" },
+      { id: 6, position: [8, 2.5, -18], args: [4, 5, 4], name: "Physics Lab", type: "Lab" },
+      { id: 7, position: [0, 2, -25], args: [12, 4, 4], name: "Lecture Hall A", type: "Hall" },
+      { id: 8, position: [15, 2.5, -12], args: [4, 5, 8], name: "Engineering Wing", type: "Lab" },
+
+      // Residential Zone (South)
+      { id: 9, position: [-5, 4, 20], args: [3, 8, 3], name: "Dorm Alpha", type: "Dorm" },
+      { id: 10, position: [5, 4, 20], args: [3, 8, 3], name: "Dorm Beta", type: "Dorm" },
+      { id: 11, position: [-12, 3.5, 18], args: [3, 7, 3], name: "Dorm Gamma", type: "Dorm" },
+      { id: 12, position: [12, 3.5, 18], args: [3, 7, 3], name: "Dorm Delta", type: "Dorm" },
+      { id: 13, position: [0, 1.5, 25], args: [10, 3, 5], name: "Dining Hall", type: "Cafe" },
+
+      // Recreation / Social (East/West)
+      { id: 14, position: [20, 2, 5], args: [6, 4, 6], name: "Sports Complex", type: "Hall" },
+      { id: 15, position: [-20, 1.5, 5], args: [5, 3, 5], name: "Innovation Hub", type: "Lab" },
+      { id: 16, position: [18, 1.5, -5], args: [4, 3, 4], name: "Coffee Shop", type: "Cafe" },
+      { id: 17, position: [-18, 2, -5], args: [5, 4, 5], name: "Art Studio", type: "Hall" },
+      
+      // Outliers
+      { id: 18, position: [25, 2.5, 25], args: [4, 5, 4], name: "Guest House", type: "Dorm" },
+      { id: 19, position: [-25, 3, -25], args: [4, 6, 4], name: "Observatory", type: "Lab" },
+    ].map(b => ({ ...b, position: [b.position[0], b.position[1], b.position[2]] as [number, number, number], args: [b.args[0], b.args[1], b.args[2]] as [number, number, number] }));
+  }, []);
 
   const handleBuildingClick = (id: number) => {
       const b = buildings.find(x => x.id === id);
@@ -433,7 +452,6 @@ const CampusHologram = () => {
             <h1 style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '4px', textTransform: 'uppercase' }}>CampusLoop</h1>
         </div>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <button onClick={() => setBuildingLayout(prev => prev + 1)} style={{ background: 'rgba(0, 255, 255, 0.1)', border: '1px solid #00ffff', color: '#00ffff', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 'bold' }}>Reconfigure</button>
             <button onClick={() => setShowHelp(true)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}><HelpCircle size={20}/></button>
             <button onClick={() => setShowSidebar(!showSidebar)} style={{ background: showSidebar ? 'rgba(0,255,255,0.2)' : 'rgba(0,255,255,0.05)', border: '1px solid #00ffff', color: '#00ffff', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}><LayoutDashboard size={20}/></button>
             <button onClick={() => { const m = !travelMode; setTravelMode(m); setErrandMode(false); setMatches(null); setActiveRoute(null); if(!m) {setStartBuilding(null); setEndBuilding(null);} }} style={{ background: travelMode ? 'rgba(0,255,0,0.2)' : 'rgba(0,255,255,0.1)', border: travelMode ? '1px solid #00ff00' : '1px solid #00ffff', color: travelMode ? '#00ff00' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{travelMode ? 'PLANNING...' : 'PLAN ROUTE'}</button>
