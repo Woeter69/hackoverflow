@@ -218,8 +218,30 @@ func UpdateErrandStatus(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept errand"})
 			return
 		}
+	} else if req.Status == "cancelled" {
+		// Authorization check: Only requester, runner, or admin can cancel
+		var requesterID, runnerID string
+		err := database.DB.QueryRow("SELECT user_id, runner_id FROM errand_requests WHERE id = $1", id).Scan(&requesterID, &runnerID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Errand not found"})
+			return
+		}
+
+		// In this hackathon build, we assume 'admin' can be a specific ID or we check context
+		isAdmin := false // Placeholder for actual admin role check if implemented
+		
+		if userID != requesterID && userID != runnerID && !isAdmin {
+			c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to cancel this mission"})
+			return
+		}
+
+		_, err = database.DB.Exec("UPDATE errand_requests SET status = 'cancelled' WHERE id = $1", id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel mission"})
+			return
+		}
 	} else {
-		// Update status in DB
+		// Update status in DB for other statuses (e.g., completed)
 		_, err := database.DB.Exec("UPDATE errand_requests SET status = $1 WHERE id = $2", req.Status, id)
 		if err != nil {
 			log.Printf("UpdateErrandStatus DB Error: %v\n", err)
