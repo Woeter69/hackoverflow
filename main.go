@@ -36,6 +36,7 @@ func main() {
 
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
+		log.Println("DB_URL not found in environment, falling back to components...")
 		// Fallback for local development if DB_URL isn't fully formed in .env
 		dbUser := os.Getenv("DB_USER")
 		dbPass := os.Getenv("DB_PASSWORD")
@@ -50,6 +51,8 @@ func main() {
 			dbUser, dbPass, dbHost, dbPort, dbName, dbSSL)
 	}
 
+	// Mask password in logs
+	log.Printf("Initializing DB connection... (Host: %s, Port: %s, DB: %s)\n", os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_NAME"))
 	database.InitDB(dbURL)
 	defer database.DB.Close()
 
