@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS errand_requests (
     user_id TEXT,
     title VARCHAR(100) NOT NULL,
     description TEXT,
+    category VARCHAR(50), -- Added category field
     pickup_geom GEOGRAPHY(POINT, 4326) NOT NULL,
     dropoff_geom GEOGRAPHY(POINT, 4326) NOT NULL,
     status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'matched', 'picked_up', 'delivered', 'cancelled'
@@ -70,3 +71,33 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 
 CREATE INDEX IF NOT EXISTS idx_messages_errand_id ON messages(errand_id);
+
+-- Seed Data (Optional, but helpful for initial state)
+INSERT INTO users (id, username, email, credits, xp, rating)
+VALUES ('system-bot', 'CampusGuard', 'bot@campusloop.com', 9999, 1000, 5.0)
+ON CONFLICT (id) DO NOTHING;
+
+-- Sample Errand
+INSERT INTO errand_requests (title, description, category, pickup_geom, dropoff_geom, status, reward_estimate)
+VALUES (
+    'Coffee from Starbucks', 
+    'Need a Venti Latte from the library Starbucks.', 
+    'delivery',
+    ST_GeomFromText('POINT(77.5946 12.9716)', 4326)::geography, 
+    ST_GeomFromText('POINT(77.5950 12.9720)', 4326)::geography,
+    'pending',
+    5.00
+) ON CONFLICT DO NOTHING;
+
+-- Sample Travel Plan
+INSERT INTO travel_plans (user_id, origin_name, destination_name, origin_geom, destination_geom, route_geom, mode, start_time)
+VALUES (
+    'system-bot',
+    'Main Gate',
+    'Science Block',
+    ST_GeomFromText('POINT(77.5940 12.9710)', 4326)::geography,
+    ST_GeomFromText('POINT(77.5960 12.9730)', 4326)::geography,
+    ST_GeogFromText('LINESTRING(77.5940 12.9710, 77.5950 12.9720, 77.5960 12.9730)'),
+    'walk',
+    CURRENT_TIMESTAMP + INTERVAL '1 hour'
+) ON CONFLICT DO NOTHING;

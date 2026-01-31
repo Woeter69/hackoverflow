@@ -54,6 +54,7 @@ type ErrandRequest struct {
 	Dropoff        Point     `json:"dropoff"`
 	Status         string    `json:"status"` // pending, matched, etc.
 	Category       string    `json:"category"` // delivery, borrow, favor, etc.
+	RunnerID       string    `json:"runner_id,omitempty"`
 	UrgencyLevel   int       `json:"urgency_level"`
 	RewardEstimate float64   `json:"reward_estimate"`
 	CreatedAt      time.Time `json:"created_at"`

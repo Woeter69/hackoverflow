@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased] - 2026-01-31
 
 ### Added
-- **Documentation:** Created a comprehensive `README.md` highlighting the Sci-Fi project aesthetic, tech stack (PostGIS, Redis, Firebase), and repository structure.
-- **Mission Ownership Context:** Requesters can now see their own missions highlighted in Mission Control and open chat channels even before a runner accepts.
-- **Lazy Registration:** `GetUserProfile` now automatically creates a default profile for first-time users (and dev users), fixing "Profile fetch failed" errors.
-- **Targeted Chat Notifications:** Implemented `SendToUser` in WebSocket Hub to notify specific recipients of incoming messages, ensuring the chat tab opens for both parties.
-- **Errand Runners:** Added `runner_id` to `errand_requests` to track who is fulfilling a mission and ensure credits are awarded correctly.
+- **Database Synchronization:** Fully synchronized the `schema.sql` with the production Render database, including missing columns (`category`, `runner_id`, `credits`, `xp`) and initial seed data.
+- **Production Transition:** Migrated the backend configuration to exclusively use the Render PostgreSQL database, deprecating the local Docker database for development.
+
+### Fixed
+- **Schema Alignment:** Resolved discrepancies between the local Docker database and the `schema.sql` file.
+- **Data Models:** Updated the Go `ErrandRequest` model to include the `RunnerID` field, matching the database schema.
 
 ### Changed
 - **Repository Cleanup:** Added the `main` Go binary to `.gitignore` and removed it from the git index to reduce repository bloat.
