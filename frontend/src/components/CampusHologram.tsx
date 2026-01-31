@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
-import { X, Info, Activity, Users, MapPin, Navigation, CheckCircle, LayoutDashboard, HelpCircle, AlertTriangle } from 'lucide-react';
+import { X, Info, Activity, Users, MapPin, Navigation, CheckCircle, LayoutDashboard, HelpCircle, AlertTriangle, MessageSquare } from 'lucide-react';
 import { api, MatchResponse, ErrandResponse } from '../lib/api';
 import { wsService } from '../lib/ws';
 import { HyperspaceOverlay } from './Hyperspace';
@@ -112,13 +112,18 @@ const Sidebar = ({ errands, currentUser, isEmergency, onClose, onComplete, onCan
                         return (
                             <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div onClick={() => canOpenChat && onOpenChat(e.id)} style={{ cursor: canOpenChat ? 'pointer' : 'default' }}>
+                                    <div>
                                         <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isRequester ? '#FFA500' : '#00ffff' }}>{isRequester ? '[YOUR] ' : ''}{e.title}</div>
                                         <div style={{ fontSize: '0.75rem', color: isMatched ? '#00ff00' : '#aaa', marginTop: '4px' }}>
                                             {isMatched ? '● IN_PROGRESS' : '○ PENDING'} • ${e.reward_estimate}
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
+                                        {canOpenChat && (
+                                            <button title="Open Comm-Link" onClick={() => onOpenChat(e.id)} style={{ background: 'rgba(0, 255, 255, 0.1)', border: '1px solid rgba(0, 255, 255, 0.2)', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ffff' }}>
+                                                <MessageSquare size={14} />
+                                            </button>
+                                        )}
                                         {canComplete && (
                                             <button title="Complete Mission" onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}>
                                                 <CheckCircle size={14} />

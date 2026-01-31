@@ -265,19 +265,23 @@ func UpdateErrandStatus(c *gin.Context) {
 		}
 	}
 
-	// If completed, award credits/XP to the person who did it (the runner)
+	// If completed, award credits/XP to the person who did it
 	if req.Status == "completed" {
-		// Get reward amount and the runner's ID
+		// Get reward amount and the IDs
 		var reward float64
-		var runnerID string
-		err := database.DB.QueryRow("SELECT reward_estimate, COALESCE(runner_id, '') FROM errand_requests WHERE id = $1", id).Scan(&reward, &runnerID)
-		if err == nil && runnerID != "" {
-			// Award XP and Credits to the runner
-			_, updateErr := database.DB.Exec("UPDATE users SET credits = credits + $1, xp = xp + 50 WHERE id = $2", int(reward), runnerID)
-			if updateErr != nil {
-				log.Printf("Failed to award credits: %v\n", updateErr)
-			} else {
-				log.Printf("Awarded %d credits to runner %s for errand %s\n", int(reward), runnerID, id)
+		var requesterID, runnerID string
+		err := database.DB.QueryRow("SELECT reward_estimate, user_id, COALESCE(runner_id, '') FROM errand_requests WHERE id = $1", id).Scan(&reward, &requesterID, &runnerID)
+		if err == nil {
+			targetID := runnerID
+			// If a requester completes it, the runner still gets the credits
+			// If it was never matched, no credits are awarded
+			if targetID != "" {
+				_, updateErr := database.DB.Exec("UPDATE users SET credits = credits + $1, xp = xp + 50 WHERE id = $2", int(reward), targetID)
+				if updateErr != nil {
+					log.Printf("Failed to award credits: %v\n", updateErr)
+				} else {
+					log.Printf("Awarded %d credits to runner %s for errand %s\n", int(reward), targetID, id)
+				}
 			}
 		}
 	}
