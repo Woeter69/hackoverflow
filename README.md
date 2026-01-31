@@ -1,73 +1,88 @@
-# 🌐 CampusLoop: The Living Digital Twin
+# CampusLoop: The Living Hologram
 
-**CampusLoop** is a hyper-immersive, 3D spatial platform designed to revolutionize campus logistics. By blending high-fidelity 3D visualization with advanced geospatial matching, it connects students in real-time for shared travel, peer-to-peer errands, and community safety.
+**CampusLoop** is a next-generation campus ecosystem designed as a "Living Hologram"—an immersive, 3D digital twin of the university environment. Built for Hackoverflow 2026, it merges high-performance spatial matching with a polished, sci-fi aesthetic to connect students for travel-sharing and errand-running.
 
-![Theme](https://img.shields.io/badge/Aesthetic-Cyberpunk%20%2F%20Sci--Fi-00ffff?style=for-the-badge)
-![Tech](https://img.shields.io/badge/Stack-Go%20%7C%20React%20%7C%20PostGIS-blue?style=for-the-badge)
-
----
-
-## 🚀 Key Features
-
-### 🏙️ 3D Holographic Interface
-Move away from flat 2D maps. CampusLoop provides a high-fidelity **3D Digital Twin** of the campus layout using Three.js.
-*   **Spatial Awareness:** See active requests and nodes exactly where they exist in the physical world.
-*   **Neon Aesthetics:** A dark-mode, glassmorphism UI designed for high-density information display.
-
-### 🧠 Smart Matching Engine (PostGIS)
-Powered by a **Go** backend and **PostgreSQL/PostGIS**, our matching logic goes beyond simple proximity.
-*   **Buffer Logic:** Matches are calculated along your *actual* planned route using `ST_DWithin` on `LineString` geometries.
-*   **Route Intersection:** Finds tasks that fall within your path's influence zone, maximizing efficiency without adding travel time.
-
-### 💬 Encrypted Comm-Link
-Once a match is established, users enter a secure, real-time terminal-style chat.
-*   **WebSocket Driven:** Instant, zero-latency coordination.
-*   **Targeted Notifications:** The interface automatically opens the neural link for both parties upon message arrival.
-
-### 💳 Neural Wallet & Reputation
-Kindness is incentivized through a gamified reputation system.
-*   **Cyber-Credits (CR):** Earn credits for completing missions.
-*   **XP & Ranks:** Level up from 'Ghost' to 'Cyber Runner' as you build trust within the community.
-*   **Lazy Registration:** Frictionless onboarding—your digital identity is created the moment you connect.
-
-### 🛡️ SOS Beacon
-Community safety is built into the core.
-*   **Global Alert:** Triggering an SOS sends a real-time red pulse across the entire network.
-*   **Visual Rally:** A massive red beam of light shoots up in the 3D world at the incident location, visible to every active user nearby.
+## 🌌 Project Philosophy
+- **Digital Twin**: Real-time 3D visualization of campus state.
+- **Sci-Fi Aesthetic**: Dark mode, Neon (Bloom) effects, Glassmorphism, and a "JARVIS-vibe" terminal interface.
+- **Precision Matching**: Leveraging PostGIS for buffer-based route matching rather than simple distance.
 
 ---
 
-## 🛠️ Technical Stack
+## 🛠 Tech Stack
 
-- **Frontend:** React, Vite, Three.js, @react-three/fiber, Tailwind CSS.
-- **Backend:** Go (Golang), Gin Framework, Gorilla WebSockets.
-- **Database:** PostgreSQL + PostGIS (Spatial Data), Redis (Real-time state).
-- **Auth:** Firebase Authentication.
-- **Infrastructure:** Docker, Docker-Compose.
+### Backend
+- **Language**: Go (Gin Framework)
+- **Database**: **PostgreSQL + PostGIS** (Spatial indexing for route matching)
+- **Real-time**: **Redis** for WebSocket state management and live event broadcasting.
+- **Auth & Storage**: **Firebase** (Secure authentication and user profile storage).
+- **Live Reload**: Air for hot-reloading Go development.
 
----
-
-## 📦 Installation & Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Woeter69/hackoverflow.git
-    cd hackoverflow
-    ```
-
-2.  **Environment Setup:**
-    Create a `.env` file based on `.env.example` and fill in your Firebase and Database credentials.
-
-3.  **Launch with Docker:**
-    ```bash
-    make up
-    ```
-    This will spin up the 3D frontend (Port 3000), the Go backend (Port 8082), and the PostGIS-enabled database.
+### Frontend
+- **Framework**: React (Vite) + TypeScript.
+- **3D Engine**: **Three.js** (@react-three/fiber + @react-three/drei).
+- **Styling**: Tailwind CSS + Framer Motion (Glassmorphism & Neon Bloom).
+- **State**: WebSockets for real-time SOS beacons and matching updates.
 
 ---
 
-## 🛰️ Digital Architecture
+## 🏗 Repository Structure
 
-CampusLoop is designed as a distributed system handling concurrent spatial queries and high-throughput WebSocket events. The backend utilizes Go's concurrency primitives to manage the WebSocket Hub and the matching engine efficiently.
+```text
+.
+├── main.go                 # Backend entry point
+├── internal/
+│   ├── database/           # Postgres (GORM), PostGIS & Redis initialization
+│   ├── handlers/           # API Logic (Matching, CRUD, Auth)
+│   ├── models/             # Database schemas & JSON structs
+│   ├── middleware/         # JWT & Auth interceptors
+│   └── websocket/          # Real-time Hub & Client management
+├── frontend/
+│   ├── src/
+│   │   ├── components/     # 3D Hologram, SOS Beacons, HUD elements
+│   │   ├── lib/            # Firebase config, API clients, WS hooks
+│   │   └── pages/          # Landing Page, Auth, Dashboard
+│   └── vite.config.ts
+├── schema.sql              # Database migrations (PostGIS enabled)
+├── docker-compose.yml      # Full-stack orchestration (Go, PG, Redis)
+└── Makefile                # Shortcuts for dev, build, and cleanup
+```
 
-*“Logistics is the skeleton of the campus; CampusLoop is the nervous system.”*
+---
+
+## 🛰 Core Systems
+
+### 1. Smart Matching (PostGIS)
+Unlike simple Euclidean distance, CampusLoop uses `ST_DWithin` on `LineString` routes. When a user posts a travel plan, the system creates a spatial buffer around their route to find errands or peers that fall within their actual path.
+
+### 2. The Real-time Hub (Redis & WebSockets)
+Redis acts as the backbone for our WebSocket service, ensuring that SOS beacons, comm-link messages, and match notifications are delivered instantly across the campus grid.
+
+### 3. Neural Identity (Firebase)
+We utilize Firebase for decentralized authentication, ensuring student data is secure while providing a seamless login experience for the "Neural Wallet" HUD.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Docker & Docker Compose
+- Go 1.22+ (for local development)
+- Node.js 20+
+
+### Installation
+1. Clone the repository.
+2. Setup your `.env` file (see `.env.example`).
+3. Launch the grid:
+   ```bash
+   make up
+   ```
+4. Access the Hologram:
+   - Frontend: `http://localhost:3000`
+   - Backend API: `http://localhost:8082`
+
+---
+
+
+
+Built for **Hackoverflow 2026**. Managed by **Woeter69**.

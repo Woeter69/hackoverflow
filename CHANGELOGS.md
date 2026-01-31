@@ -5,10 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased] - 2026-01-31
 
 ### Added
+- **Documentation:** Created a comprehensive `README.md` highlighting the Sci-Fi project aesthetic, tech stack (PostGIS, Redis, Firebase), and repository structure.
 - **Mission Ownership Context:** Requesters can now see their own missions highlighted in Mission Control and open chat channels even before a runner accepts.
 - **Lazy Registration:** `GetUserProfile` now automatically creates a default profile for first-time users (and dev users), fixing "Profile fetch failed" errors.
 - **Targeted Chat Notifications:** Implemented `SendToUser` in WebSocket Hub to notify specific recipients of incoming messages, ensuring the chat tab opens for both parties.
 - **Errand Runners:** Added `runner_id` to `errand_requests` to track who is fulfilling a mission and ensure credits are awarded correctly.
+
+### Changed
+- **Repository Cleanup:** Added the `main` Go binary to `.gitignore` and removed it from the git index to reduce repository bloat.
 
 ### Fixed
 - **Authorization:** Fixed a `403 Forbidden` error during mission status updates by correctly validating user ownership (Requester vs Runner).
