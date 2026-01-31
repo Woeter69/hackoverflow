@@ -231,9 +231,10 @@ func UpdateErrandStatus(c *gin.Context) {
 		}
 
 		// In this hackathon build, we assume 'admin' can be a specific ID or we check context
-		isAdmin := false // Placeholder for actual admin role check if implemented
+		isAdmin := userID == "dev-user-123" // Allow dev user to act as admin
 		
 		if userID != requesterID && userID != runnerID && !isAdmin {
+			log.Printf("Unauthorized cancel attempt by %s (Requester: %s, Runner: %s)\n", userID, requesterID, runnerID)
 			c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to cancel this mission"})
 			return
 		}
@@ -244,8 +245,19 @@ func UpdateErrandStatus(c *gin.Context) {
 			return
 		}
 	} else {
+		// Authorization for completion/other status updates
+		var requesterID, runnerID string
+		err := database.DB.QueryRow("SELECT user_id, COALESCE(runner_id, '') FROM errand_requests WHERE id = $1", id).Scan(&requesterID, &runnerID)
+		if err == nil {
+			isAdmin := userID == "dev-user-123"
+			if userID != requesterID && userID != runnerID && !isAdmin {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Unauthorized status update"})
+				return
+			}
+		}
+
 		// Update status in DB for other statuses (e.g., completed)
-		_, err := database.DB.Exec("UPDATE errand_requests SET status = $1 WHERE id = $2", req.Status, id)
+		_, err = database.DB.Exec("UPDATE errand_requests SET status = $1 WHERE id = $2", req.Status, id)
 		if err != nil {
 			log.Printf("UpdateErrandStatus DB Error: %v\n", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update status"})

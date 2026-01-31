@@ -119,8 +119,16 @@ const Sidebar = ({ errands, currentUser, isEmergency, onClose, onComplete, onCan
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        {canComplete && <button title="Complete Mission" onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>}
-                                        {(isRequester || isRunner) && <button title="Cancel Mission" onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>}
+                                        {canComplete && (
+                                            <button title="Complete Mission" onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}>
+                                                <CheckCircle size={14} />
+                                            </button>
+                                        )}
+                                        {(isRequester || isRunner) && (
+                                            <button title="Cancel Mission" onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}>
+                                                <X size={14} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: '#ccc', fontStyle: 'italic', paddingLeft: '8px', borderLeft: '2px solid rgba(0, 255, 255, 0.3)' }}>
