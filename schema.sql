@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS errand_requests (
     status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'matched', 'picked_up', 'delivered', 'cancelled'
     urgency_level INT DEFAULT 1,
     reward_estimate DECIMAL(10, 2),
+    runner_id TEXT, -- The traveler who accepted the errand
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

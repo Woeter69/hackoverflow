@@ -170,7 +170,7 @@ func GetPendingErrands(c *gin.Context) {
 			ST_Y(dropoff_geom::geometry) as dropoff_lat,
 			ST_X(dropoff_geom::geometry) as dropoff_lng
 		FROM errand_requests
-		WHERE status = 'pending'
+		WHERE status IN ('pending', 'matched')
 		ORDER BY created_at DESC
 		LIMIT 50
 	`
@@ -197,7 +197,7 @@ func GetPendingErrands(c *gin.Context) {
 }
 
 type UpdateErrandStatusRequest struct {
-	Status string `json:"status" binding:"required,oneof=completed cancelled pending"`
+	Status string `json:"status" binding:"required,oneof=completed cancelled pending matched"`
 }
 
 func UpdateErrandStatus(c *gin.Context) {
@@ -208,32 +208,39 @@ func UpdateErrandStatus(c *gin.Context) {
 		return
 	}
 
-	// Update status in DB
-	_, err := database.DB.Exec("UPDATE errand_requests SET status = $1 WHERE id = $2", req.Status, id)
-	if err != nil {
-		log.Printf("UpdateErrandStatus DB Error: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update status"})
-		return
+	userID := c.GetString("userID")
+
+	// Special handling for matching (accepting) an errand
+	if req.Status == "matched" {
+		_, err := database.DB.Exec("UPDATE errand_requests SET status = 'matched', runner_id = $1 WHERE id = $2 AND status = 'pending'", userID, id)
+		if err != nil {
+			log.Printf("AcceptErrand DB Error: %v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to accept errand"})
+			return
+		}
+	} else {
+		// Update status in DB
+		_, err := database.DB.Exec("UPDATE errand_requests SET status = $1 WHERE id = $2", req.Status, id)
+		if err != nil {
+			log.Printf("UpdateErrandStatus DB Error: %v\n", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update status"})
+			return
+		}
 	}
 
-	// If completed, award credits/XP to the person who did it (the current user)
+	// If completed, award credits/XP to the person who did it (the runner)
 	if req.Status == "completed" {
-		// Get reward amount and the requester's ID
+		// Get reward amount and the runner's ID
 		var reward float64
-		var requesterID string
-		err := database.DB.QueryRow("SELECT reward_estimate, user_id FROM errand_requests WHERE id = $1", id).Scan(&reward, &requesterID)
-		if err == nil {
-			// Award XP and Credits to the runner (current user)
-			runnerID := c.GetString("userID")
-			if runnerID != "" {
-				_, updateErr := database.DB.Exec("UPDATE users SET credits = credits + $1, xp = xp + 50 WHERE id = $2", int(reward), runnerID)
-				if updateErr != nil {
-					log.Printf("Failed to award credits: %v\n", updateErr)
-				} else {
-					log.Printf("Awarded %d credits to user %s for errand %s\n", int(reward), runnerID, id)
-				}
+		var runnerID string
+		err := database.DB.QueryRow("SELECT reward_estimate, runner_id FROM errand_requests WHERE id = $1", id).Scan(&reward, &runnerID)
+		if err == nil && runnerID != "" {
+			// Award XP and Credits to the runner
+			_, updateErr := database.DB.Exec("UPDATE users SET credits = credits + $1, xp = xp + 50 WHERE id = $2", int(reward), runnerID)
+			if updateErr != nil {
+				log.Printf("Failed to award credits: %v\n", updateErr)
 			} else {
-				log.Println("No user ID in context, skipping credit award")
+				log.Printf("Awarded %d credits to runner %s for errand %s\n", int(reward), runnerID, id)
 			}
 		}
 	}
@@ -326,6 +333,22 @@ func SendMessage(c *gin.Context) {
 	// Broadcast via WebSocket
 	if wsHub != nil {
 		wsHub.BroadcastJSON("NEW_MESSAGE", m)
+
+		// Send targeted notification to the other party
+		var requesterID, runnerID string
+		err := database.DB.QueryRow("SELECT user_id, runner_id FROM errand_requests WHERE id = $1", errandID).Scan(&requesterID, &runnerID)
+		if err == nil {
+			recipientID := requesterID
+			if senderID == requesterID {
+				recipientID = runnerID
+			}
+			if recipientID != "" {
+				wsHub.SendToUser(recipientID, "INCOMING_CHAT", gin.H{
+					"errand_id": errandID,
+					"sender_id": senderID,
+				})
+			}
+		}
 	}
 
 	c.JSON(http.StatusCreated, m)

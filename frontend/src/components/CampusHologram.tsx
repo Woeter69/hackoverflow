@@ -330,20 +330,28 @@ const CampusHologram = () => {
   };
 
   useEffect(() => {
-    wsService.connect();
+    if (user) {
+        wsService.connect(user.uid);
+    }
+    
     const hNew = (e: any) => setPendingErrands(p => [e, ...p]);
     const hEmerg = (p: any) => { setIsEmergency(p.active); setEmergencyMsg(p.message); setEmergencyBuildingId(p.building_id); };
-    const hStat = (p: any) => { if (p.status !== 'pending') setPendingErrands(prev => prev.filter(err => err.id !== p.id)); };
+    const hStat = (p: any) => { if (p.status !== 'pending' && p.status !== 'matched') setPendingErrands(prev => prev.filter(err => err.id !== p.id)); };
     const hMatch = (p: any) => {
         if (user && p.matched_user_ids.includes(user.uid)) {
             setActiveNotification(p.errand);
         }
+    };
+    const hChat = (p: any) => {
+        setChatErrandId(p.errand_id);
+        setShowSidebar(true);
     };
 
     wsService.on('NEW_ERRAND', hNew);
     wsService.on('EMERGENCY_STATE', hEmerg);
     wsService.on('ERRAND_STATUS_UPDATE', hStat);
     wsService.on('MATCH_NOTIFICATION', hMatch);
+    wsService.on('INCOMING_CHAT', hChat);
 
     const unsub = onAuthStateChanged(auth, (u) => { 
         setUser(u); 
@@ -352,7 +360,14 @@ const CampusHologram = () => {
             fetchProfile();
         } 
     });
-    return () => { unsub(); wsService.off('NEW_ERRAND', hNew); wsService.off('EMERGENCY_STATE', hEmerg); wsService.off('ERRAND_STATUS_UPDATE', hStat); wsService.off('MATCH_NOTIFICATION', hMatch); };
+    return () => { 
+        unsub(); 
+        wsService.off('NEW_ERRAND', hNew); 
+        wsService.off('EMERGENCY_STATE', hEmerg); 
+        wsService.off('ERRAND_STATUS_UPDATE', hStat); 
+        wsService.off('MATCH_NOTIFICATION', hMatch);
+        wsService.off('INCOMING_CHAT', hChat);
+    };
   }, [user]); // user dependency added to ensure check works
 
   const buildings = useMemo(() => {

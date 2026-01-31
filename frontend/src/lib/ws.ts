@@ -3,22 +3,19 @@ type WebSocketListener = (data: any) => void;
 class WebSocketService {
     private socket: WebSocket | null = null;
     private listeners: Record<string, WebSocketListener[]> = {};
-    private url: string;
+    private urlBase: string;
 
     constructor() {
-        // Determine WS URL (handles dev proxy vs prod)
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host; // e.g. localhost:3000
-        // In dev, Vite proxies /api, but usually not /ws unless configured.
-        // If we used the Vite proxy for /ws, it would be `ws://${host}/ws`.
-        // Let's assume the Vite proxy handles the upgrade.
-        this.url = `${protocol}//${host}/ws`;
+        const host = window.location.host;
+        this.urlBase = `${protocol}//${host}/ws`;
     }
 
-    connect() {
+    connect(userId?: string) {
         if (this.socket) return;
 
-        this.socket = new WebSocket(this.url);
+        const url = userId ? `${this.urlBase}?userId=${userId}` : this.urlBase;
+        this.socket = new WebSocket(url);
 
         this.socket.onopen = () => {
             console.log("WebSocket Connected");

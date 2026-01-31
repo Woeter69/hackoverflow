@@ -6,11 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - **Lazy Registration:** `GetUserProfile` now automatically creates a default profile for first-time users (and dev users), fixing "Profile fetch failed" errors.
+- **Targeted Chat Notifications:** Implemented `SendToUser` in WebSocket Hub to notify specific recipients of incoming messages, ensuring the chat tab opens for both parties.
+- **Errand Runners:** Added `runner_id` to `errand_requests` to track who is fulfilling a mission and ensure credits are awarded correctly.
 
 ### Fixed
+- **Database Schema:** Manually synchronized the database with `schema.sql`, resolving missing columns (`credits`, `xp`) and missing tables (`messages`).
 - **Credit Logic:** Fixed a bug where credits and XP were not being awarded after completing an errand.
 - **Backend Build:** Implemented missing `ToggleEmergency` and `GetUserProfile` handlers to fix compilation errors.
 - **Chat Stability:** Improved `SendMessage` with safer UUID parsing, context-based user IDs, and enhanced error logging to resolve 500 errors.
+- **Vite Proxy:** Fixed `ECONNREFUSED` by resolving backend crashes caused by database inconsistencies.
 
 ## [Unreleased] - 2026-01-30
 

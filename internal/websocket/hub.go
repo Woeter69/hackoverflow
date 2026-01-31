@@ -61,3 +61,25 @@ func (h *Hub) BroadcastJSON(eventType string, payload interface{}) {
 		h.broadcast <- bytes
 	}
 }
+
+// SendToUser sends a message to a specific user
+func (h *Hub) SendToUser(userID string, eventType string, payload interface{}) {
+	msg := map[string]interface{}{
+		"type":    eventType,
+		"payload": payload,
+	}
+	bytes, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+
+	for client := range h.clients {
+		if client.UserID == userID {
+			select {
+			case client.send <- bytes:
+			default:
+				// If send channel is full, do nothing or handle accordingly
+			}
+		}
+	}
+}

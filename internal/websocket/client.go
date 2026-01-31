@@ -36,6 +36,9 @@ var upgrader = websocket.Upgrader{
 type Client struct {
 	hub *Hub
 
+	// UserID for targeted messaging
+	UserID string
+
 	// The websocket connection.
 	conn *websocket.Conn
 
@@ -60,7 +63,6 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		// We can handle incoming messages here if needed (e.g. location updates)
 	}
 }
 
@@ -107,12 +109,17 @@ func (c *Client) writePump() {
 
 // ServeWs handles websocket requests from the peer.
 func ServeWs(hub *Hub, c *gin.Context) {
+	userID := c.Query("userId")
+	if userID == "" {
+		userID = "anonymous"
+	}
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	client := &Client{hub: hub, UserID: userID, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in
