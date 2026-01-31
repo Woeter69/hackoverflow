@@ -153,6 +153,7 @@ type ErrandResponseDTO struct {
 	ID             string  `json:"id"`
 	UserID         string  `json:"user_id"`
 	RunnerID       string  `json:"runner_id"`
+	Status         string  `json:"status"`
 	Title          string  `json:"title"`
 	Description    string  `json:"description"`
 	Category       string  `json:"category"`
@@ -166,7 +167,7 @@ type ErrandResponseDTO struct {
 func GetPendingErrands(c *gin.Context) {
 	query := `
 		SELECT 
-			id, user_id, COALESCE(runner_id, '') as runner_id, title, description, category, reward_estimate::FLOAT,
+			id, user_id, COALESCE(runner_id, '') as runner_id, status, title, description, category, reward_estimate::FLOAT,
 			ST_Y(pickup_geom::geometry) as pickup_lat,
 			ST_X(pickup_geom::geometry) as pickup_lng,
 			ST_Y(dropoff_geom::geometry) as dropoff_lat,
@@ -188,7 +189,7 @@ func GetPendingErrands(c *gin.Context) {
 	errands := []ErrandResponseDTO{}
 	for rows.Next() {
 		var e ErrandResponseDTO
-		if err := rows.Scan(&e.ID, &e.UserID, &e.RunnerID, &e.Title, &e.Description, &e.Category, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err != nil {
+		if err := rows.Scan(&e.ID, &e.UserID, &e.RunnerID, &e.Status, &e.Title, &e.Description, &e.Category, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err != nil {
 			log.Printf("Scan Error: %v\n", err)
 			continue
 		}
@@ -223,7 +224,7 @@ func UpdateErrandStatus(c *gin.Context) {
 	} else if req.Status == "cancelled" {
 		// Authorization check: Only requester, runner, or admin can cancel
 		var requesterID, runnerID string
-		err := database.DB.QueryRow("SELECT user_id, runner_id FROM errand_requests WHERE id = $1", id).Scan(&requesterID, &runnerID)
+		err := database.DB.QueryRow("SELECT user_id, COALESCE(runner_id, '') FROM errand_requests WHERE id = $1", id).Scan(&requesterID, &runnerID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Errand not found"})
 			return
@@ -257,7 +258,7 @@ func UpdateErrandStatus(c *gin.Context) {
 		// Get reward amount and the runner's ID
 		var reward float64
 		var runnerID string
-		err := database.DB.QueryRow("SELECT reward_estimate, runner_id FROM errand_requests WHERE id = $1", id).Scan(&reward, &runnerID)
+		err := database.DB.QueryRow("SELECT reward_estimate, COALESCE(runner_id, '') FROM errand_requests WHERE id = $1", id).Scan(&reward, &runnerID)
 		if err == nil && runnerID != "" {
 			// Award XP and Credits to the runner
 			_, updateErr := database.DB.Exec("UPDATE users SET credits = credits + $1, xp = xp + 50 WHERE id = $2", int(reward), runnerID)

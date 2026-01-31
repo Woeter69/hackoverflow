@@ -105,17 +105,21 @@ const Sidebar = ({ errands, currentUser, isEmergency, onClose, onComplete, onCan
                     {errands.map((e: any) => {
                         const isRequester = currentUser?.uid === e.user_id;
                         const isRunner = currentUser?.uid === e.runner_id;
+                        const isMatched = e.status === 'matched';
                         const canOpenChat = isRequester || isRunner;
+                        const canComplete = isRunner || (isRequester && isMatched);
 
                         return (
                             <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div onClick={() => canOpenChat && onOpenChat(e.id)} style={{ cursor: canOpenChat ? 'pointer' : 'default' }}>
                                         <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isRequester ? '#FFA500' : '#00ffff' }}>{isRequester ? '[YOUR] ' : ''}{e.title}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div>
+                                        <div style={{ fontSize: '0.75rem', color: isMatched ? '#00ff00' : '#aaa', marginTop: '4px' }}>
+                                            {isMatched ? '● IN_PROGRESS' : '○ PENDING'} • ${e.reward_estimate}
+                                        </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
-                                        {isRunner && <button title="Complete Mission" onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>}
+                                        {canComplete && <button title="Complete Mission" onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>}
                                         {(isRequester || isRunner) && <button title="Cancel Mission" onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>}
                                     </div>
                                 </div>

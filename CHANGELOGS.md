@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 - **Errand Runners:** Added `runner_id` to `errand_requests` to track who is fulfilling a mission and ensure credits are awarded correctly.
 
 ### Fixed
+- **Cancellation Logic:** Fixed a backend error where mission cancellation failed if no runner was assigned (NULL `runner_id`).
+- **Mission Control UI:** Added mission status indicators and ensured the "Complete" button is visible to both requester and runner for active tasks.
 - **Database Schema:** Synchronized `errand_requests` table with missing `category` and `runner_id` columns, resolving persistent 500 errors in errand creation and retrieval.
 - **Action Permissions:** Restricted "Complete" mission action strictly to the assigned runner to ensure fair credit distribution.
 - **Auth Stability:** Refactored React lifecycle hooks to separate authentication tracking from user-dependent side effects, ensuring stable login state management.
