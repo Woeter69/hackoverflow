@@ -5,11 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased] - 2026-01-31
 
 ### Added
+- **Mission Ownership Context:** Requesters can now see their own missions highlighted in Mission Control and open chat channels even before a runner accepts.
 - **Lazy Registration:** `GetUserProfile` now automatically creates a default profile for first-time users (and dev users), fixing "Profile fetch failed" errors.
 - **Targeted Chat Notifications:** Implemented `SendToUser` in WebSocket Hub to notify specific recipients of incoming messages, ensuring the chat tab opens for both parties.
 - **Errand Runners:** Added `runner_id` to `errand_requests` to track who is fulfilling a mission and ensure credits are awarded correctly.
 
 ### Fixed
+- **Action Permissions:** Restricted "Complete" mission action strictly to the assigned runner to ensure fair credit distribution.
 - **Auth Stability:** Refactored React lifecycle hooks to separate authentication tracking from user-dependent side effects, ensuring stable login state management.
 - **Environment Configuration:** Resolved an issue where the backend was incorrectly connecting to a remote Render database instead of the local Docker database, ensuring consistent schema application.
 - **Connection Resiliency:** Improved WebSocket and Vite proxy handling to gracefully manage backend startup delays, resolving persistent `ECONNREFUSED` errors during initial boot.

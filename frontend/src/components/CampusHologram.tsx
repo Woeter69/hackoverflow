@@ -93,7 +93,7 @@ const InfoPanel = ({ building, onClose, onReportEmergency }: any) => (
   </div>
 );
 
-const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel, onOpenChat }: any) => (
+const Sidebar = ({ errands, currentUser, isEmergency, onClose, onComplete, onCancel, onOpenChat }: any) => (
     <div style={{ position: 'absolute', top: '100px', left: '30px', width: '320px', bottom: '30px', background: 'rgba(5, 15, 25, 0.75)', backdropFilter: 'blur(20px)', border: '1px solid rgba(0, 255, 255, 0.1)', borderRight: isEmergency ? '4px solid #ff0000' : '4px solid #00ffff', borderRadius: '12px', color: '#fff', zIndex: 15, padding: '24px', display: 'flex', flexDirection: 'column', gap: '25px', boxShadow: '20px 0 50px rgba(0,0,0,0.5)', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '0.8rem', color: '#00ffff', letterSpacing: '2px', textTransform: 'uppercase' }}>Mission Control</h3>
@@ -102,20 +102,29 @@ const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel, onOpenCh
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
             {errands.length === 0 ? <div style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>No active nodes...</div> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {errands.map((e: any) => (
-                        <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div onClick={() => onOpenChat(e.id)} style={{ cursor: 'pointer' }}><div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#00ffff' }}>{e.title}</div><div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div></div>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>
-                                    <button onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>
+                    {errands.map((e: any) => {
+                        const isRequester = currentUser?.uid === e.user_id;
+                        const isRunner = currentUser?.uid === e.runner_id;
+                        const canOpenChat = isRequester || isRunner;
+
+                        return (
+                            <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div onClick={() => canOpenChat && onOpenChat(e.id)} style={{ cursor: canOpenChat ? 'pointer' : 'default' }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: isRequester ? '#FFA500' : '#00ffff' }}>{isRequester ? '[YOUR] ' : ''}{e.title}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        {isRunner && <button title="Complete Mission" onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>}
+                                        {(isRequester || isRunner) && <button title="Cancel Mission" onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>}
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#ccc', fontStyle: 'italic', paddingLeft: '8px', borderLeft: '2px solid rgba(0, 255, 255, 0.3)' }}>
+                                    "{e.description}"
                                 </div>
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#ccc', fontStyle: 'italic', paddingLeft: '8px', borderLeft: '2px solid rgba(0, 255, 255, 0.3)' }}>
-                                "{e.description}"
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -492,7 +501,7 @@ const CampusHologram = () => {
 
       <NeuralWallet credits={profile.credits} xp={profile.xp} rank={profile.rank} />
 
-      {showSidebar && <Sidebar errands={pendingErrands} isEmergency={isEmergency} onClose={() => setShowSidebar(false)} onComplete={(id: any) => handleUpdateErrand(id, 'completed')} onCancel={(id: any) => handleUpdateErrand(id, 'cancelled')} onOpenChat={(id: string) => setChatErrandId(id)} />}
+      {showSidebar && <Sidebar errands={pendingErrands} currentUser={user} isEmergency={isEmergency} onClose={() => setShowSidebar(false)} onComplete={(id: any) => handleUpdateErrand(id, 'completed')} onCancel={(id: any) => handleUpdateErrand(id, 'cancelled')} onOpenChat={(id: string) => setChatErrandId(id)} />}
       {chatErrandId && <TerminalChat errandId={chatErrandId} userId={user?.uid || "demo-user"} onClose={() => setChatErrandId(null)} />}
       {!travelMode && !errandMode && selectedBuilding && <InfoPanel building={selectedBuilding} onClose={() => setSelectedId(null)} onReportEmergency={handleReportEmergency} />}
 

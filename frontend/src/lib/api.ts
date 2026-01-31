@@ -46,6 +46,8 @@ export interface ErrandRequest {
 
 export interface ErrandResponse {
   id: string;
+  user_id: string;
+  runner_id: string;
   title: string;
   description: string;
   category: string;

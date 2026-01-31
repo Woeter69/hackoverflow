@@ -151,6 +151,8 @@ func CreateErrandRequest(c *gin.Context) {
 
 type ErrandResponseDTO struct {
 	ID             string  `json:"id"`
+	UserID         string  `json:"user_id"`
+	RunnerID       string  `json:"runner_id"`
 	Title          string  `json:"title"`
 	Description    string  `json:"description"`
 	Category       string  `json:"category"`
@@ -164,7 +166,7 @@ type ErrandResponseDTO struct {
 func GetPendingErrands(c *gin.Context) {
 	query := `
 		SELECT 
-			id, title, description, category, reward_estimate::FLOAT,
+			id, user_id, COALESCE(runner_id, '') as runner_id, title, description, category, reward_estimate::FLOAT,
 			ST_Y(pickup_geom::geometry) as pickup_lat,
 			ST_X(pickup_geom::geometry) as pickup_lng,
 			ST_Y(dropoff_geom::geometry) as dropoff_lat,
@@ -186,7 +188,7 @@ func GetPendingErrands(c *gin.Context) {
 	errands := []ErrandResponseDTO{}
 	for rows.Next() {
 		var e ErrandResponseDTO
-		if err := rows.Scan(&e.ID, &e.Title, &e.Description, &e.Category, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err != nil {
+		if err := rows.Scan(&e.ID, &e.UserID, &e.RunnerID, &e.Title, &e.Description, &e.Category, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err != nil {
 			log.Printf("Scan Error: %v\n", err)
 			continue
 		}
