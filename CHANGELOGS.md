@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - **Errand Runners:** Added `runner_id` to `errand_requests` to track who is fulfilling a mission and ensure credits are awarded correctly.
 
 ### Fixed
+- **Database Schema:** Synchronized `errand_requests` table with missing `category` and `runner_id` columns, resolving persistent 500 errors in errand creation and retrieval.
 - **Action Permissions:** Restricted "Complete" mission action strictly to the assigned runner to ensure fair credit distribution.
 - **Auth Stability:** Refactored React lifecycle hooks to separate authentication tracking from user-dependent side effects, ensuring stable login state management.
 - **Environment Configuration:** Resolved an issue where the backend was incorrectly connecting to a remote Render database instead of the local Docker database, ensuring consistent schema application.
