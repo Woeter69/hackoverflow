@@ -103,10 +103,12 @@ const Sidebar = ({ errands, currentUser, isEmergency, onClose, onComplete, onCan
             {errands.length === 0 ? <div style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>No active nodes...</div> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {errands.map((e: any) => {
-                        const isRequester = currentUser?.uid === e.user_id;
-                        const isRunner = currentUser?.uid === e.runner_id;
+                        const uid = currentUser?.uid || "dev-user-123";
+                        const isRequester = uid === e.user_id;
+                        const isRunner = uid === e.runner_id;
                         const isMatched = e.status === 'matched';
                         const canOpenChat = isRequester || isRunner;
+                        // Tick button shows if: You are the runner, OR you are the requester and it's been matched.
                         const canComplete = isRunner || (isRequester && isMatched);
 
                         return (
