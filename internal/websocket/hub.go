@@ -16,6 +16,9 @@ type Hub struct {
 
 	// Unregister requests from clients.
 	unregister chan *Client
+
+	// Persistent Emergency State
+	emergencyState []byte
 }
 
 func NewHub() *Hub {
@@ -32,6 +35,10 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
+			// If there's an active emergency, notify the new client immediately
+			if h.emergencyState != nil {
+				client.send <- h.emergencyState
+			}
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
@@ -47,6 +54,19 @@ func (h *Hub) Run() {
 				}
 			}
 		}
+	}
+}
+
+// SetEmergencyState updates the persistent state and broadcasts it
+func (h *Hub) SetEmergencyState(payload interface{}) {
+	msg := map[string]interface{}{
+		"type":    "EMERGENCY_STATE",
+		"payload": payload,
+	}
+	bytes, err := json.Marshal(msg)
+	if err == nil {
+		h.emergencyState = bytes
+		h.broadcast <- bytes
 	}
 }
 

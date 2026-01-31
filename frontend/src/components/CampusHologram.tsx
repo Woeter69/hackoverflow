@@ -352,9 +352,21 @@ const CampusHologram = () => {
       } catch (e) { alert("Action failed"); }
   };
 
+  const handleToggleEmergency = async (active: boolean, msg: string, bid: number) => {
+      try {
+          const res = await api.toggleEmergency(active, msg, bid);
+          if (res.data.active !== undefined) {
+              // Note: The websocket will also trigger this, but we update locally for snappiness
+              setIsEmergency(res.data.active);
+              setEmergencyBuildingId(bid);
+              setEmergencyMsg(msg);
+          }
+      } catch (e) { console.error("SOS Toggle Failed"); }
+  };
+
   const handleReportEmergency = async (id: number) => {
       const msg = prompt("ENTER EMERGENCY CLEARANCE MESSAGE:");
-      if (msg) await api.toggleEmergency(true, msg, id);
+      if (msg) handleToggleEmergency(true, msg, id);
   };
 
   useEffect(() => {
@@ -500,7 +512,7 @@ const CampusHologram = () => {
             <button onClick={() => setShowSidebar(!showSidebar)} style={{ background: showSidebar ? 'rgba(0,255,255,0.2)' : 'rgba(0,255,255,0.05)', border: '1px solid #00ffff', color: '#00ffff', padding: '8px 12px', cursor: 'pointer', borderRadius: '4px' }}><LayoutDashboard size={20}/></button>
             <button onClick={() => { const m = !travelMode; setTravelMode(m); setErrandMode(false); setMatches(null); setActiveRoute(null); if(!m) {setStartBuilding(null); setEndBuilding(null);} }} style={{ background: travelMode ? 'rgba(0,255,0,0.2)' : 'rgba(0,255,255,0.1)', border: travelMode ? '1px solid #00ff00' : '1px solid #00ffff', color: travelMode ? '#00ff00' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{travelMode ? 'PLANNING...' : 'PLAN ROUTE'}</button>
             <button onClick={() => { const m = !errandMode; setErrandMode(m); setTravelMode(false); setMatches(null); setActiveRoute(null); if(!m) {setPickupBuilding(null); setDropoffBuilding(null);} }} style={{ background: errandMode ? 'rgba(255,165,0,0.2)' : 'rgba(0,255,255,0.1)', border: errandMode ? '1px solid #FFA500' : '1px solid #00ffff', color: errandMode ? '#FFA500' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{errandMode ? 'REQUESTING...' : 'REQUEST FAVOR'}</button>
-            <button onClick={() => api.toggleEmergency(!isEmergency, "EVACUATION DRILL", -1)} style={{ background: isEmergency ? 'rgba(255,0,0,0.2)' : 'rgba(0,255,255,0.1)', border: isEmergency ? '1px solid #ff0000' : '1px solid #00ffff', color: isEmergency ? '#ff0000' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{isEmergency ? 'OFF' : 'SOS'}</button>
+            <button onClick={() => handleToggleEmergency(!isEmergency, "CRITICAL EMERGENCY BROADCAST", 7)} style={{ background: isEmergency ? 'rgba(255,0,0,0.2)' : 'rgba(0,255,255,0.1)', border: isEmergency ? '1px solid #ff0000' : '1px solid #00ffff', color: isEmergency ? '#ff0000' : '#00ffff', padding: '8px 24px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px' }}>{isEmergency ? 'OFF' : 'SOS'}</button>
             {activeRoute && <button onClick={() => { setActiveRoute(null); setStartBuilding(null); setEndBuilding(null); }} style={{ background: 'rgba(255,0,0,0.2)', border: '1px solid #ff0000', color: '#ff0000', padding: '8px 16px', cursor: 'pointer', fontWeight: 'bold' }}>CLEAR PATH</button>}
             <button onClick={() => { signOut(auth); navigate('/'); }} style={{ background: 'transparent', border: '1px solid #f44', color: '#f44', padding: '8px 16px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>Exit</button>
         </div>

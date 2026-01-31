@@ -412,8 +412,17 @@ func ToggleEmergency(c *gin.Context) {
 	}
 	
 	userID := c.GetString("userID")
-	// TODO: Implement actual emergency logic (insert into emergency_beacons)
 	log.Printf("Emergency toggled by %s: %v", userID, req)
+
+	// Persist and Broadcast the emergency state via WebSocket
+	if wsHub != nil {
+		wsHub.SetEmergencyState(gin.H{
+			"active":      req.Active,
+			"message":     req.Message,
+			"building_id": req.BuildingID,
+			"user_id":     userID,
+		})
+	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "active": req.Active})
 }
