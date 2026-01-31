@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - **Errand Runners:** Added `runner_id` to `errand_requests` to track who is fulfilling a mission and ensure credits are awarded correctly.
 
 ### Fixed
+- **Environment Configuration:** Resolved an issue where the backend was incorrectly connecting to a remote Render database instead of the local Docker database, ensuring consistent schema application.
 - **Connection Resiliency:** Improved WebSocket and Vite proxy handling to gracefully manage backend startup delays, resolving persistent `ECONNREFUSED` errors during initial boot.
 - **Database Schema:** Manually synchronized the database with `schema.sql`, resolving missing columns (`credits`, `xp`) and missing tables (`messages`).
 - **Credit Logic:** Fixed a bug where credits and XP were not being awarded after completing an errand.
