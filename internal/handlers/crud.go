@@ -224,10 +224,17 @@ func UpdateErrandStatus(c *gin.Context) {
 		err := database.DB.QueryRow("SELECT reward_estimate, user_id FROM errand_requests WHERE id = $1", id).Scan(&reward, &requesterID)
 		if err == nil {
 			// Award XP and Credits to the runner (current user)
-			// In a real app, 'runner_id' would be in the request or from context
-			// For this hackathon demo, we'll just log it or update a placeholder 'system' user
-			// Ideally: UPDATE users SET credits = credits + reward, xp = xp + 50 WHERE id = runner_id
-			log.Printf("Awarding %f credits for errand %s\n", reward, id)
+			runnerID := c.GetString("userID")
+			if runnerID != "" {
+				_, updateErr := database.DB.Exec("UPDATE users SET credits = credits + $1, xp = xp + 50 WHERE id = $2", int(reward), runnerID)
+				if updateErr != nil {
+					log.Printf("Failed to award credits: %v\n", updateErr)
+				} else {
+					log.Printf("Awarded %d credits to user %s for errand %s\n", int(reward), runnerID, id)
+				}
+			} else {
+				log.Println("No user ID in context, skipping credit award")
+			}
 		}
 	}
 
@@ -277,13 +284,24 @@ func GetChatHistory(c *gin.Context) {
 }
 
 func SendMessage(c *gin.Context) {
-	errandID := c.Param("id")
+	errandIDStr := c.Param("id")
+	errandID, err := uuid.Parse(errandIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid errand ID"})
+		return
+	}
+
 	var req struct {
-		SenderID string `json:"sender_id"`
 		Content  string `json:"content"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	senderID := c.GetString("userID")
+	if senderID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
@@ -293,13 +311,14 @@ func SendMessage(c *gin.Context) {
 		RETURNING id, created_at
 	`
 	var m models.Message
-	m.ErrandID = uuid.MustParse(errandID)
-	m.SenderID = req.SenderID
+	m.ErrandID = errandID
+	m.SenderID = senderID
 	m.Content = req.Content
 	m.IsEncrypted = true
 
-	err := database.DB.QueryRow(query, errandID, req.SenderID, req.Content).Scan(&m.ID, &m.CreatedAt)
+	err = database.DB.QueryRow(query, errandID, senderID, req.Content).Scan(&m.ID, &m.CreatedAt)
 	if err != nil {
+		log.Printf("SendMessage DB Error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
 		return
 	}
@@ -310,4 +329,47 @@ func SendMessage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, m)
+}
+
+func ToggleEmergency(c *gin.Context) {
+	var req EmergencyToggleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	userID := c.GetString("userID")
+	// TODO: Implement actual emergency logic (insert into emergency_beacons)
+	log.Printf("Emergency toggled by %s: %v", userID, req)
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "active": req.Active})
+}
+
+func GetUserProfile(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var u models.User
+	query := "SELECT id, username, email, credits, xp, rating, created_at FROM users WHERE id = $1"
+	err := database.DB.QueryRow(query, userID).Scan(&u.ID, &u.Username, &u.Email, &u.Credits, &u.XP, &u.Rating, &u.CreatedAt)
+	if err != nil {
+		// Lazy Registration: If user not found, create them
+		log.Printf("User %s not found, creating new profile...", userID)
+		
+		insertQuery := `
+			INSERT INTO users (id, username, email, credits, xp, rating)
+			VALUES ($1, 'Traveler', 'traveler@campusloop.xyz', 100, 0, 5.0)
+			RETURNING id, username, email, credits, xp, rating, created_at
+		`
+		err = database.DB.QueryRow(insertQuery, userID).Scan(&u.ID, &u.Username, &u.Email, &u.Credits, &u.XP, &u.Rating, &u.CreatedAt)
+		if err != nil {
+			log.Printf("GetUserProfile Create Error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user profile"})
+			return
+		}
+	}
+	c.JSON(http.StatusOK, u)
 }

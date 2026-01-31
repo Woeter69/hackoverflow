@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2026-01-31
+
+### Added
+- **Lazy Registration:** `GetUserProfile` now automatically creates a default profile for first-time users (and dev users), fixing "Profile fetch failed" errors.
+
+### Fixed
+- **Credit Logic:** Fixed a bug where credits and XP were not being awarded after completing an errand.
+- **Backend Build:** Implemented missing `ToggleEmergency` and `GetUserProfile` handlers to fix compilation errors.
+- **Chat Stability:** Improved `SendMessage` with safer UUID parsing, context-based user IDs, and enhanced error logging to resolve 500 errors.
+
 ## [Unreleased] - 2026-01-30
 
 ### Fixed
