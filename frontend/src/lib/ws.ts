@@ -15,28 +15,38 @@ class WebSocketService {
         if (this.socket) return;
 
         const url = userId ? `${this.urlBase}?userId=${userId}` : this.urlBase;
-        this.socket = new WebSocket(url);
+        try {
+            this.socket = new WebSocket(url);
 
-        this.socket.onopen = () => {
-            console.log("WebSocket Connected");
-        };
+            this.socket.onopen = () => {
+                console.log("WebSocket Connected");
+            };
 
-        this.socket.onmessage = (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                if (msg.type && this.listeners[msg.type]) {
-                    this.listeners[msg.type].forEach(cb => cb(msg.payload));
+            this.socket.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type && this.listeners[msg.type]) {
+                        this.listeners[msg.type].forEach(cb => cb(msg.payload));
+                    }
+                } catch (e) {
+                    console.error("WS Parse Error", e);
                 }
-            } catch (e) {
-                console.error("WS Parse Error", e);
-            }
-        };
+            };
 
-        this.socket.onclose = () => {
-            console.log("WebSocket Disconnected. Reconnecting...");
-            this.socket = null;
-            setTimeout(() => this.connect(), 3000);
-        };
+            this.socket.onerror = (err) => {
+                console.warn("WebSocket Error", err);
+                this.socket = null;
+            };
+
+            this.socket.onclose = () => {
+                console.log("WebSocket Disconnected. Reconnecting in 5s...");
+                this.socket = null;
+                setTimeout(() => this.connect(userId), 5000);
+            };
+        } catch (e) {
+            console.error("WS Connect Error", e);
+            setTimeout(() => this.connect(userId), 5000);
+        }
     }
 
     on(type: string, callback: WebSocketListener) {
