@@ -271,16 +271,25 @@ func UpdateErrandStatus(c *gin.Context) {
 		var reward float64
 		var requesterID, runnerID string
 		err := database.DB.QueryRow("SELECT reward_estimate, user_id, COALESCE(runner_id, '') FROM errand_requests WHERE id = $1", id).Scan(&reward, &requesterID, &runnerID)
-		if err == nil {
+		
+		if err != nil {
+			log.Printf("Completion Award Fetch Error: %v\n", err)
+		} else {
+			log.Printf("Processing award for mission %s: Reward=%.2f, Requester=%s, Runner=%s\n", id, reward, requesterID, runnerID)
+			
 			targetID := runnerID
-			// If a requester completes it, the runner still gets the credits
-			// If it was never matched, no credits are awarded
+			if targetID == "" {
+				// Fallback for demo: If no runner, award to requester so they see the number change
+				log.Printf("No runner assigned to mission %s, awarding to requester %s (Demo Mode)\n", id, requesterID)
+				targetID = requesterID
+			}
+
 			if targetID != "" {
 				_, updateErr := database.DB.Exec("UPDATE users SET credits = credits + $1, xp = xp + 50 WHERE id = $2", int(reward), targetID)
 				if updateErr != nil {
-					log.Printf("Failed to award credits: %v\n", updateErr)
+					log.Printf("Failed to award credits to %s: %v\n", targetID, updateErr)
 				} else {
-					log.Printf("Awarded %d credits to runner %s for errand %s\n", int(reward), targetID, id)
+					log.Printf("SUCCESS: Awarded %d credits to user %s for errand %s\n", int(reward), targetID, id)
 				}
 			}
 		}
