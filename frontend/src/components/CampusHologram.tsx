@@ -108,8 +108,8 @@ const Sidebar = ({ errands, currentUser, isEmergency, onClose, onComplete, onCan
                         const isRunner = uid === e.runner_id;
                         const isMatched = e.status === 'matched';
                         const canOpenChat = isRequester || isRunner;
-                        // Tick button shows if: You are the runner, OR you are the requester and it's been matched.
-                        const canComplete = isRunner || (isRequester && isMatched);
+                        // Simplified: Either the creator or the person doing it can "Finish" it.
+                        const canComplete = isRequester || isRunner;
 
                         return (
                             <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
