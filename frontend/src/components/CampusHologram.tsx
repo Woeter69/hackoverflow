@@ -103,11 +103,16 @@ const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel, onOpenCh
             {errands.length === 0 ? <div style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>No active nodes...</div> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {errands.map((e: any) => (
-                        <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div onClick={() => onOpenChat(e.id)} style={{ cursor: 'pointer' }}><div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#00ffff' }}>{e.title}</div><div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div></div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>
-                                <button onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>
+                        <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div onClick={() => onOpenChat(e.id)} style={{ cursor: 'pointer' }}><div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#00ffff' }}>{e.title}</div><div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div></div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>
+                                    <button onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>
+                                </div>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#ccc', fontStyle: 'italic', paddingLeft: '8px', borderLeft: '2px solid rgba(0, 255, 255, 0.3)' }}>
+                                "{e.description}"
                             </div>
                         </div>
                     ))}
@@ -117,6 +122,20 @@ const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel, onOpenCh
         <div style={{ marginTop: 'auto', background: 'rgba(0, 255, 255, 0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(0, 255, 255, 0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}><Activity size={16} color="#00ffff" /><span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Live Feed</span></div>
             <div style={{ fontSize: '0.7rem', color: '#00ffff', fontFamily: 'monospace' }}>&gt; SCANNING SECTOR 7...<br/>&gt; {errands.length} NODES ACTIVE<br/>&gt; AES-256 ENCRYPTED</div>
+        </div>
+    </div>
+);
+
+const MatchNotification = ({ errand, onOpen, onClose }: { errand: ErrandResponse, onOpen: () => void, onClose: () => void }) => (
+    <div style={{ position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0, 255, 0, 0.1)', backdropFilter: 'blur(20px)', border: '1px solid #00ff00', borderRadius: '12px', padding: '20px', zIndex: 200, display: 'flex', alignItems: 'center', gap: '20px', boxShadow: '0 0 40px rgba(0, 255, 0, 0.3)' }}>
+        <div style={{ background: '#00ff00', borderRadius: '50%', padding: '10px', color: '#000' }}><MapPin size={24} /></div>
+        <div>
+            <div style={{ color: '#00ff00', fontWeight: 'bold', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>New Opportunity Nearby</div>
+            <div style={{ color: '#fff', fontSize: '0.9rem', marginTop: '4px' }}>{errand.title} • <span style={{ color: '#fa0' }}>${errand.reward_estimate}</span></div>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={onOpen} style={{ background: '#00ff00', color: '#000', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', textTransform: 'uppercase' }}>Accept</button>
+            <button onClick={onClose} style={{ background: 'transparent', border: '1px solid #00ff00', color: '#00ff00', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}><X size={16} /></button>
         </div>
     </div>
 );
@@ -277,6 +296,7 @@ const CampusHologram = () => {
   const [chatErrandId, setChatErrandId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [buildingLayout, setBuildingLayout] = useState(0);
+  const [activeNotification, setActiveNotification] = useState<ErrandResponse | null>(null);
 
   const fetchProfile = async () => {
       try {
@@ -315,10 +335,16 @@ const CampusHologram = () => {
     const hNew = (e: any) => setPendingErrands(p => [e, ...p]);
     const hEmerg = (p: any) => { setIsEmergency(p.active); setEmergencyMsg(p.message); setEmergencyBuildingId(p.building_id); };
     const hStat = (p: any) => { if (p.status !== 'pending') setPendingErrands(prev => prev.filter(err => err.id !== p.id)); };
+    const hMatch = (p: any) => {
+        if (user && p.matched_user_ids.includes(user.uid)) {
+            setActiveNotification(p.errand);
+        }
+    };
 
     wsService.on('NEW_ERRAND', hNew);
     wsService.on('EMERGENCY_STATE', hEmerg);
     wsService.on('ERRAND_STATUS_UPDATE', hStat);
+    wsService.on('MATCH_NOTIFICATION', hMatch);
 
     const unsub = onAuthStateChanged(auth, (u) => { 
         setUser(u); 
@@ -327,8 +353,8 @@ const CampusHologram = () => {
             fetchProfile();
         } 
     });
-    return () => { unsub(); wsService.off('NEW_ERRAND', hNew); wsService.off('EMERGENCY_STATE', hEmerg); wsService.off('ERRAND_STATUS_UPDATE', hStat); };
-  }, []);
+    return () => { unsub(); wsService.off('NEW_ERRAND', hNew); wsService.off('EMERGENCY_STATE', hEmerg); wsService.off('ERRAND_STATUS_UPDATE', hStat); wsService.off('MATCH_NOTIFICATION', hMatch); };
+  }, [user]); // user dependency added to ensure check works
 
   const buildings = useMemo(() => {
     const b: { id: number, position: [number, number, number], args: [number, number, number], name: string, type: string }[] = [];
@@ -417,6 +443,18 @@ const CampusHologram = () => {
             <button onClick={() => { signOut(auth); navigate('/'); }} style={{ background: 'transparent', border: '1px solid #f44', color: '#f44', padding: '8px 16px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase' }}>Exit</button>
         </div>
       </header>
+
+      {activeNotification && (
+          <MatchNotification 
+            errand={activeNotification} 
+            onOpen={() => {
+                setChatErrandId(activeNotification.id);
+                setShowSidebar(true);
+                setActiveNotification(null);
+            }} 
+            onClose={() => setActiveNotification(null)} 
+          />
+      )}
 
       <NeuralWallet credits={profile.credits} xp={profile.xp} rank={profile.rank} />
 

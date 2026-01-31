@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/Woeter69/hackoverflow/internal/database"
+	"github.com/Woeter69/hackoverflow/internal/models"
 	"github.com/Woeter69/hackoverflow/internal/websocket"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 var wsHub *websocket.Hub
@@ -110,6 +112,37 @@ func CreateErrandRequest(c *gin.Context) {
 		`
 		if err := database.DB.QueryRow(q, newID).Scan(&e.ID, &e.Title, &e.Description, &e.Category, &e.RewardEstimate, &e.PickupLat, &e.PickupLng, &e.DropoffLat, &e.DropoffLng); err == nil {
 			wsHub.BroadcastJSON("NEW_ERRAND", e)
+
+			// --- Notification Logic for Matching Travelers ---
+			// Find travelers whose route is within 200m of this new errand's pickup
+			matchQuery := `
+				SELECT user_id 
+				FROM travel_plans 
+				WHERE is_active = TRUE 
+				AND ST_DWithin(route_geom, ST_GeomFromText($1, 4326), 200)
+			`
+			rows, matchErr := database.DB.Query(matchQuery, req.PickupGeom)
+			if matchErr == nil {
+				defer rows.Close()
+				var matchedUserIDs []string
+				for rows.Next() {
+					var uid string
+					if err := rows.Scan(&uid); err == nil {
+						matchedUserIDs = append(matchedUserIDs, uid)
+					}
+				}
+
+				if len(matchedUserIDs) > 0 {
+					wsHub.BroadcastJSON("MATCH_NOTIFICATION", gin.H{
+						"errand":           e,
+						"matched_user_ids": matchedUserIDs,
+					})
+					log.Printf("Notified %d travelers about new errand %s", len(matchedUserIDs), newID)
+				}
+			} else {
+				log.Printf("Error finding matching travelers: %v", matchErr)
+			}
+			// ------------------------------------------------
 		}
 	}
 
