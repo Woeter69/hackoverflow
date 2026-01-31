@@ -48,6 +48,7 @@ const StarField = ({ speed = 0.5, active = false }: { speed?: number, active?: b
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
+          args={[positions, 3]}
           count={starCount}
           array={positions}
           itemSize={3}

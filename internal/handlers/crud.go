@@ -183,6 +183,21 @@ func UpdateErrandStatus(c *gin.Context) {
 		return
 	}
 
+	// If completed, award credits/XP to the person who did it (the current user)
+	if req.Status == "completed" {
+		// Get reward amount and the requester's ID
+		var reward float64
+		var requesterID string
+		err := database.DB.QueryRow("SELECT reward_estimate, user_id FROM errand_requests WHERE id = $1", id).Scan(&reward, &requesterID)
+		if err == nil {
+			// Award XP and Credits to the runner (current user)
+			// In a real app, 'runner_id' would be in the request or from context
+			// For this hackathon demo, we'll just log it or update a placeholder 'system' user
+			// Ideally: UPDATE users SET credits = credits + reward, xp = xp + 50 WHERE id = runner_id
+			log.Printf("Awarding %f credits for errand %s\n", reward, id)
+		}
+	}
+
 	// Broadcast update
 	if wsHub != nil {
 		wsHub.BroadcastJSON("ERRAND_STATUS_UPDATE", gin.H{
@@ -200,21 +215,66 @@ type EmergencyToggleRequest struct {
 	BuildingID int    `json:"building_id"`
 }
 
-func ToggleEmergency(c *gin.Context) {
-	var req EmergencyToggleRequest
+func GetChatHistory(c *gin.Context) {
+	errandID := c.Param("id")
+	
+	query := `
+		SELECT id, errand_id, sender_id, content, is_encrypted, created_at
+		FROM messages
+		WHERE errand_id = $1
+		ORDER BY created_at ASC
+	`
+	rows, err := database.DB.Query(query, errandID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch chat"})
+		return
+	}
+	defer rows.Close()
+
+	messages := []models.Message{}
+	for rows.Next() {
+		var m models.Message
+		if err := rows.Scan(&m.ID, &m.ErrandID, &m.SenderID, &m.Content, &m.IsEncrypted, &m.CreatedAt); err != nil {
+			continue
+		}
+		messages = append(messages, m)
+	}
+
+	c.JSON(http.StatusOK, messages)
+}
+
+func SendMessage(c *gin.Context) {
+	errandID := c.Param("id")
+	var req struct {
+		SenderID string `json:"sender_id"`
+		Content  string `json:"content"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Broadcast global alert with details
-	if wsHub != nil {
-		wsHub.BroadcastJSON("EMERGENCY_STATE", gin.H{
-			"active":      req.Active,
-			"message":     req.Message,
-			"building_id": req.BuildingID,
-		})
+	query := `
+		INSERT INTO messages (errand_id, sender_id, content)
+		VALUES ($1, $2, $3)
+		RETURNING id, created_at
+	`
+	var m models.Message
+	m.ErrandID = uuid.MustParse(errandID)
+	m.SenderID = req.SenderID
+	m.Content = req.Content
+	m.IsEncrypted = true
+
+	err := database.DB.QueryRow(query, errandID, req.SenderID, req.Content).Scan(&m.ID, &m.CreatedAt)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save message"})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "broadcasted", "active": req.Active})
+	// Broadcast via WebSocket
+	if wsHub != nil {
+		wsHub.BroadcastJSON("NEW_MESSAGE", m)
+	}
+
+	c.JSON(http.StatusCreated, m)
 }

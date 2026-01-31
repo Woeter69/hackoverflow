@@ -7,12 +7,22 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID `json:"id"`
+	ID           string    `json:"id"`
 	Username     string    `json:"username"`
 	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"`
+	Credits      int       `json:"credits"`
+	XP           int       `json:"xp"`
 	Rating       float64   `json:"rating"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+type Message struct {
+	ID          uuid.UUID `json:"id"`
+	ErrandID    uuid.UUID `json:"errand_id"`
+	SenderID    string    `json:"sender_id"`
+	Content     string    `json:"content"`
+	IsEncrypted bool      `json:"is_encrypted"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type Point struct {

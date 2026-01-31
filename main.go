@@ -90,6 +90,9 @@ func main() {
 		api.GET("/errand-requests", handlers.GetPendingErrands)
 		api.PUT("/errand-requests/:id/status", handlers.UpdateErrandStatus)
 		api.POST("/emergency", handlers.ToggleEmergency)
+		api.GET("/profile", handlers.GetUserProfile)
+		api.GET("/errand-requests/:id/chat", handlers.GetChatHistory)
+		api.POST("/errand-requests/:id/chat", handlers.SendMessage)
 	}
 
 	// Serve Frontend Static Files

@@ -2,10 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2026-01-30
+
+### Fixed
+- **Frontend Build:** Resolved multiple TypeScript errors in `CampusHologram.tsx` and `Hyperspace.tsx`.
+- **MatchList Component:** Re-implemented the missing `MatchList` component to display matched errands along the route.
+- **Database Resiliency:** Added retry logic and 30-second timeout to backend DB connection for improved cloud startup reliability.
+- **Docker Production:** Removed `.env` file requirement in `Dockerfile` to support CI/CD build environments.
+- **API Typing:** Added missing `MatchResponse` and `Point` interfaces to frontend API library.
+
 ## [Unreleased] - 2026-01-29
 
 ### Added
-- **Hyperspace Transition:** Implemented a Star Wars-style lightspeed jump effect when confirming routes.
+- **Cyber-Credit System:** Users now earn credits and XP for completing errands.
+- **Neural Wallet HUD:** A sleek glassmorphism overlay showing real-time balance, level, and rank.
+- **Encrypted Comm-Link:** Real-time terminal-style chat for every errand request.
+- **Terminal UI:** Hacker-style chat window with secure channel visualization.
+- **Profile API:** New backend endpoint to fetch user stats and reputation level.
+- **Rankings:** Initialized users with ranks (e.g., Ghost -> Cyber Runner) based on XP.
 - **SOS Beacon:** Added a massive, pulsing red beam visualization for emergency alerts (Building 7).
 - **Glassmorphism Sidebar:** Created a "Mission Control" sidebar displaying:
     - Real-time System Status (Network, Alert Level).

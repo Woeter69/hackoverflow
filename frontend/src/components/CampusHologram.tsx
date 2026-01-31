@@ -93,7 +93,7 @@ const InfoPanel = ({ building, onClose, onReportEmergency }: any) => (
   </div>
 );
 
-const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel }: any) => (
+const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel, onOpenChat }: any) => (
     <div style={{ position: 'absolute', top: '100px', left: '30px', width: '320px', bottom: '30px', background: 'rgba(5, 15, 25, 0.75)', backdropFilter: 'blur(20px)', border: '1px solid rgba(0, 255, 255, 0.1)', borderRight: isEmergency ? '4px solid #ff0000' : '4px solid #00ffff', borderRadius: '12px', color: '#fff', zIndex: 15, padding: '24px', display: 'flex', flexDirection: 'column', gap: '25px', boxShadow: '20px 0 50px rgba(0,0,0,0.5)', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '0.8rem', color: '#00ffff', letterSpacing: '2px', textTransform: 'uppercase' }}>Mission Control</h3>
@@ -104,7 +104,7 @@ const Sidebar = ({ errands, isEmergency, onClose, onComplete, onCancel }: any) =
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {errands.map((e: any) => (
                         <div key={e.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(0,255,255,0.05)', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div><div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{e.title}</div><div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div></div>
+                            <div onClick={() => onOpenChat(e.id)} style={{ cursor: 'pointer' }}><div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#00ffff' }}>{e.title}</div><div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>${e.reward_estimate} • {e.category}</div></div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <button onClick={() => onComplete(e.id)} style={{ background: 'rgba(0, 255, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#00ff00' }}><CheckCircle size={14} /></button>
                                 <button onClick={() => onCancel(e.id)} style={{ background: 'rgba(255, 0, 0, 0.2)', border: 'none', borderRadius: '4px', padding: '4px', cursor: 'pointer', color: '#ff4444' }}><X size={14} /></button>
@@ -149,11 +149,107 @@ const SOSBeam = ({ position }: { position: [number, number, number] }) => {
     );
 };
 
+const MatchList = ({ matches, onClose }: { matches: MatchResponse[], onClose: () => void }) => (
+    <div style={{ position: 'absolute', bottom: '100px', left: '50%', transform: 'translateX(-50%)', width: '400px', background: 'rgba(10, 20, 30, 0.9)', backdropFilter: 'blur(10px)', border: '1px solid #00ff00', borderRadius: '12px', color: '#fff', zIndex: 100, padding: '20px', boxShadow: '0 0 30px rgba(0, 255, 0, 0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3 style={{ margin: 0, color: '#00ff00', fontSize: '0.9rem', letterSpacing: '2px', textTransform: 'uppercase' }}>Matches Found</h3>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}><X size={18} /></button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
+            {matches.length === 0 ? <p style={{ fontSize: '0.8rem', color: '#aaa', textAlign: 'center' }}>No errands found along this route.</p> : matches.map((m, i) => (
+                <div key={i} style={{ padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(0,255,0,0.1)' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#00ff00' }}>{m.errand.title}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '4px' }}>{m.errand.description}</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.7rem' }}>
+                        <span style={{ color: '#fa0' }}>Reward: ${m.errand.reward_estimate}</span>
+                        <span style={{ color: '#888' }}>{Math.round(m.distance_from_route)}m off-path</span>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const NeuralWallet = ({ credits, xp, rank }: { credits: number, xp: number, rank: string }) => (
+    <div style={{ position: 'absolute', top: '100px', right: '30px', padding: '15px 25px', background: 'rgba(5, 15, 25, 0.75)', backdropFilter: 'blur(20px)', border: '1px solid rgba(0, 255, 255, 0.2)', borderRight: '4px solid #00ffff', borderRadius: '8px', color: '#fff', zIndex: 15, display: 'flex', flexDirection: 'column', gap: '5px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+        <div style={{ fontSize: '0.65rem', color: '#00ffff', letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.8 }}>Digital Reputation</div>
+        <div style={{ fontSize: '1.2rem', fontWeight: 900, letterSpacing: '1px' }}>{rank} <span style={{ fontSize: '0.7rem', color: '#666', fontWeight: 400 }}>lvl.{Math.floor(xp / 1000)}</span></div>
+        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ background: 'rgba(0, 255, 255, 0.1)', padding: '5px 10px', borderRadius: '4px', border: '1px solid rgba(0, 255, 255, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '8px', height: '8px', background: '#00ffff', borderRadius: '50%', boxShadow: '0 0 10px #00ffff' }}></div>
+                <span style={{ fontSize: '0.9rem', fontWeight: 'bold', fontFamily: 'monospace' }}>{credits.toLocaleString()} CR</span>
+            </div>
+            <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{ width: `${(xp % 1000) / 10}%`, height: '100%', background: '#00ffff' }}></div>
+            </div>
+        </div>
+    </div>
+);
+
+const TerminalChat = ({ errandId, userId, onClose }: { errandId: string, userId: string, onClose: () => void }) => {
+    const [messages, setMessages] = useState<any[]>([]);
+    const [input, setInput] = useState("");
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    const fetchHistory = async () => {
+        try {
+            const res = await api.getChat(errandId);
+            setMessages(res.data);
+        } catch (e) { console.error(e); }
+    };
+
+    useEffect(() => {
+        fetchHistory();
+        const handleNewMsg = (m: any) => {
+            if (m.errand_id === errandId) setMessages(prev => [...prev, m]);
+        };
+        wsService.on('NEW_MESSAGE', handleNewMsg);
+        return () => wsService.off('NEW_MESSAGE', handleNewMsg);
+    }, [errandId]);
+
+    useEffect(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }, [messages]);
+
+    const send = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+        try {
+            await api.sendMessage(errandId, userId, input);
+            setInput("");
+        } catch (e) { alert("Comms Failure"); }
+    };
+
+    return (
+        <div style={{ position: 'fixed', bottom: '100px', right: '30px', width: '350px', height: '450px', background: 'rgba(5, 10, 15, 0.95)', backdropFilter: 'blur(20px)', border: '1px solid #00ffff', borderRadius: '8px', zIndex: 100, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 0 50px rgba(0,255,255,0.1)' }}>
+            <div style={{ background: 'rgba(0, 255, 255, 0.1)', padding: '10px 15px', borderBottom: '1px solid #00ffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ color: '#00ffff', fontSize: '0.7rem', letterSpacing: '2px', fontWeight: 'bold' }}>SECURE_CHANNEL://{errandId.slice(0,8)}</div>
+                <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#00ffff', cursor: 'pointer' }}><X size={14} /></button>
+            </div>
+            <div ref={scrollRef} style={{ flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                {messages.map((m, i) => (
+                    <div key={i} style={{ alignSelf: m.sender_id === userId ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                        <div style={{ color: m.sender_id === userId ? '#00ffff' : '#aaa', fontSize: '0.6rem', marginBottom: '2px' }}>{m.sender_id === userId ? 'YOU' : 'TRACER_REF'}</div>
+                        <div style={{ background: m.sender_id === userId ? 'rgba(0, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)', padding: '8px 12px', borderRadius: '4px', border: m.sender_id === userId ? '1px solid rgba(0, 255, 255, 0.2)' : '1px solid rgba(255, 255, 255, 0.1)', color: '#fff', wordBreak: 'break-all' }}>
+                            {m.content}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <form onSubmit={send} style={{ padding: '10px', borderTop: '1px solid rgba(0, 255, 255, 0.2)', display: 'flex', gap: '5px' }}>
+                <input value={input} onChange={e => setInput(e.target.value)} placeholder="Enter encrypted text..." style={{ flex: 1, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(0,255,255,0.3)', color: '#00ffff', padding: '8px', borderRadius: '4px', fontSize: '0.8rem', fontFamily: 'monospace' }} />
+                <button type="submit" style={{ background: '#00ffff', color: '#000', border: 'none', padding: '0 15px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>SEND</button>
+            </form>
+        </div>
+    );
+};
+
 // --- Main Component ---
 
 const CampusHologram = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<{ credits: number, xp: number, rank: string }>({ credits: 0, xp: 0, rank: "Ghost" });
   const [pendingErrands, setPendingErrands] = useState<ErrandResponse[]>([]);
   
   // UI State
@@ -178,8 +274,16 @@ const CampusHologram = () => {
   const [dropoffBuilding, setDropoffBuilding] = useState<any>(null);
   const [activeRoute, setActiveRoute] = useState<any>(null);
   const [matches, setMatches] = useState<MatchResponse[] | null>(null);
+  const [chatErrandId, setChatErrandId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [buildingLayout, setBuildingLayout] = useState(0);
+
+  const fetchProfile = async () => {
+      try {
+          const res = await api.getProfile();
+          setProfile(res.data);
+      } catch (e) { console.error("Profile fetch failed"); }
+  };
 
   const fetchErrands = async () => {
       setIsLoading(true);
@@ -194,6 +298,9 @@ const CampusHologram = () => {
       try {
           await api.updateErrandStatus(id, status);
           setPendingErrands(prev => prev.filter(err => err.id !== id));
+          if (status === 'completed') {
+              fetchProfile(); // Refresh credits
+          }
           alert(`Success: Request ${status}`);
       } catch (e) { alert("Action failed"); }
   };
@@ -213,12 +320,18 @@ const CampusHologram = () => {
     wsService.on('EMERGENCY_STATE', hEmerg);
     wsService.on('ERRAND_STATUS_UPDATE', hStat);
 
-    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); if (u) fetchErrands(); });
+    const unsub = onAuthStateChanged(auth, (u) => { 
+        setUser(u); 
+        if (u) {
+            fetchErrands();
+            fetchProfile();
+        } 
+    });
     return () => { unsub(); wsService.off('NEW_ERRAND', hNew); wsService.off('EMERGENCY_STATE', hEmerg); wsService.off('ERRAND_STATUS_UPDATE', hStat); };
   }, []);
 
   const buildings = useMemo(() => {
-    const b = [];
+    const b: { id: number, position: [number, number, number], args: [number, number, number], name: string, type: string }[] = [];
     const types = ["Lab", "Dorm", "Hall", "Cafe", "Admin"];
     for (let i = 0; i < 20; i++) {
       const h = Math.random() * 5 + 2; 
@@ -305,7 +418,10 @@ const CampusHologram = () => {
         </div>
       </header>
 
-      {showSidebar && <Sidebar errands={pendingErrands} isEmergency={isEmergency} onClose={() => setShowSidebar(false)} onComplete={(id: any) => handleUpdateErrand(id, 'completed')} onCancel={(id: any) => handleUpdateErrand(id, 'cancelled')} />}
+      <NeuralWallet credits={profile.credits} xp={profile.xp} rank={profile.rank} />
+
+      {showSidebar && <Sidebar errands={pendingErrands} isEmergency={isEmergency} onClose={() => setShowSidebar(false)} onComplete={(id: any) => handleUpdateErrand(id, 'completed')} onCancel={(id: any) => handleUpdateErrand(id, 'cancelled')} onOpenChat={(id: string) => setChatErrandId(id)} />}
+      {chatErrandId && <TerminalChat errandId={chatErrandId} userId={user?.uid || "demo-user"} onClose={() => setChatErrandId(null)} />}
       {!travelMode && !errandMode && selectedBuilding && <InfoPanel building={selectedBuilding} onClose={() => setSelectedId(null)} onReportEmergency={handleReportEmergency} />}
 
       {travelMode && (

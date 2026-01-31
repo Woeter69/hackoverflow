@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY, -- Firebase UID
     username VARCHAR(50),
     email VARCHAR(100),
+    credits INT DEFAULT 100,
+    xp INT DEFAULT 0,
     rating DECIMAL(3, 2) DEFAULT 5.0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -55,3 +57,15 @@ CREATE TABLE IF NOT EXISTS emergency_beacons (
 CREATE INDEX IF NOT EXISTS idx_travel_plans_route ON travel_plans USING GIST (route_geom);
 CREATE INDEX IF NOT EXISTS idx_errand_requests_pickup ON errand_requests USING GIST (pickup_geom);
 CREATE INDEX IF NOT EXISTS idx_emergency_beacons_location ON emergency_beacons USING GIST (current_location);
+
+-- Chat Messages for Errands
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    errand_id UUID REFERENCES errand_requests(id) ON DELETE CASCADE,
+    sender_id TEXT, -- Firebase UID
+    content TEXT NOT NULL,
+    is_encrypted BOOLEAN DEFAULT TRUE, -- Just for flavor/visuals
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_errand_id ON messages(errand_id);

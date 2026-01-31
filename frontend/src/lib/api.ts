@@ -24,6 +24,11 @@ apiClient.interceptors.request.use(async (config) => {
   return Promise.reject(error);
 });
 
+export interface Point {
+  lat: number;
+  lng: number;
+}
+
 export interface TravelPlanRequest {
   user_id: string; // Firebase UID
   route_geom: string; // WKT LineString
@@ -39,8 +44,6 @@ export interface ErrandRequest {
   reward_estimate: number;
 }
 
-// ... existing code ...
-
 export interface ErrandResponse {
   id: string;
   title: string;
@@ -51,6 +54,11 @@ export interface ErrandResponse {
   pickup_lng: number;
   dropoff_lat: number;
   dropoff_lng: number;
+}
+
+export interface MatchResponse {
+  errand: ErrandResponse;
+  distance_from_route: number;
 }
 
 export const api = {
@@ -66,6 +74,14 @@ export const api = {
   // System
   toggleEmergency: (active: boolean, message: string = "", buildingId: number = -1) => 
     apiClient.post('/emergency', { active, message, building_id: buildingId }),
+
+  // User
+  getProfile: () => apiClient.get('/profile'),
+
+  // Chat
+  getChat: (errandId: string) => apiClient.get(`/errand-requests/${errandId}/chat`),
+  sendMessage: (errandId: string, senderId: string, content: string) => 
+    apiClient.post(`/errand-requests/${errandId}/chat`, { sender_id: senderId, content }),
 
   // Health
   checkHealth: () => apiClient.get('/../health'), // Go up one level from /api/v1
